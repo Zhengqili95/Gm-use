@@ -16,5 +16,8 @@
     "preact": "^11.0.1",
     "sharp": "^0.35.3"
   },
-  "private": true
+  "private": true,
+  "engines": {
+    "node": ">=22.22.0"
+  }
 }

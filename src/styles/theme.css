@@ -151,13 +151,26 @@
 	transition: width 0.4s ease;
 }
 
-/* 完成的課程：進度元件會在側邊欄的課程連結加上 data-vl-done="true" */
+/* 完成的課程：進度元件會在側邊欄的課程連結加上 data-vl-done="true"。
+   連結是 display: block，所以 ✓ 用絕對定位固定在右邊，不會換行。 */
+nav.sidebar a[data-vl-done='true'] {
+	position: relative;
+	padding-inline-end: 1.75rem;
+}
+
 nav.sidebar a[data-vl-done='true']::after {
 	content: '✓';
-	margin-inline-start: auto;
-	padding-inline-start: 0.5rem;
+	position: absolute;
+	inset-inline-end: 0.5rem;
+	top: 50%;
+	transform: translateY(-50%);
 	font-weight: 700;
 	color: var(--sl-color-accent);
+}
+
+/* 目前這一課的連結底色就是品牌綠，✓ 改用連結自己的文字色才看得到 */
+nav.sidebar a[aria-current='page'][data-vl-done='true']::after {
+	color: inherit;
 }
 
 /* ---------- 外殼的示範互動元件（T-009 做好正式元件後一起刪掉） ---------- */
