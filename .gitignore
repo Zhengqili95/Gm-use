@@ -1,0 +1,20 @@
+# 共用討論區只放在主資料夾，不進 git（見 AGENTS.md）
+/team/
+
+# Claude Code 的 worktree 與個人設定
+.claude/worktrees/
+.claude/settings.local.json
+
+# 金鑰與環境變數，絕對不要 commit
+.env
+.env.*
+!.env.example
+
+# 套件與建置產物
+node_modules/
+dist/
+build/
+
+# 系統檔
+.DS_Store
+Thumbs.db
