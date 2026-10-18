@@ -1,0 +1,22 @@
+---
+// 在 Starlight 原本的側邊欄上方，加一個「學習進度」區塊。
+// 數字和進度條由 T-010 的進度元件更新，接口寫在同資料夾的 README.md。
+import Default from '@astrojs/starlight/components/Sidebar.astro';
+
+const { sidebar } = Astro.locals.starlightRoute;
+// 「課程」群組裡有幾個連結，就是總課數（群組名稱定義在 astro.config.mjs）
+const lessons = sidebar.find((entry) => entry.type === 'group' && entry.label === '課程');
+const total = lessons?.type === 'group' ? lessons.entries.filter((entry) => entry.type === 'link').length : 0;
+---
+
+<section class="vl-progress" aria-label="學習進度" data-vl-progress data-vl-total={total}>
+	<p class="vl-progress-label">
+		<span>學習進度</span>
+		<span data-vl-progress-count>0 / {total} 課</span>
+	</p>
+	<div class="vl-progress-track" aria-hidden="true">
+		<div class="vl-progress-fill" data-vl-progress-fill></div>
+	</div>
+</section>
+
+<Default><slot /></Default>

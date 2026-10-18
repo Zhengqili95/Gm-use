@@ -64,6 +64,14 @@ Gemini 讀不到檔案，第一次要貼完整的背景：
 
 觀察房只能看，不能發言，也不會改任何檔案。
 
+## 網站：在自己電腦上預覽
+
+需要先裝好 Node.js（這台電腦已經有了）。在 `vibe-learn` 資料夾打開終端機：
+
+1. 第一次先執行 `npm install`，安裝網站需要的套件。
+2. 執行 `npm run dev`，然後用瀏覽器打開 http://localhost:4321 。
+3. 要停止時，在終端機按 `Ctrl + C`。
+
 ## 檔案在哪裡
 
 | 檔案 | 用途 |
@@ -76,5 +84,7 @@ Gemini 讀不到檔案，第一次要貼完整的背景：
 | `team/DECISIONS.md` | 定案紀錄 |
 | `.claude/skills/`、`.agents/skills/` | Claude 和 Codex 用的 skill（兩份內容相同） |
 | `tools/observer/` | 觀察房（只用 Node.js，不需要另外安裝套件） |
+| `src/` | 網站本體（Astro + Starlight）：課程頁在 `src/content/docs/lessons/` |
+| `astro.config.mjs` | 網站設定：標題、語言、側邊欄、發布用的網址 |
 
 `team/` 沒有進 git，只存在這個資料夾裡。要備份的話，直接複製整個 `team/` 資料夾。
