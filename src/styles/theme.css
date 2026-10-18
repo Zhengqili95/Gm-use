@@ -1,0 +1,199 @@
+/*
+ * vibe-learn 主題：清爽好讀，品牌色是深綠（和觀察房一致）。
+ * Starlight 的預設是深色主題，寫在 :root；淺色主題寫在 :root[data-theme='light']。
+ * 在淺色主題裡，--sl-color-white 是「最深的文字色」，--sl-color-black 是背景色（Starlight 的命名方式）。
+ */
+
+:root {
+	--sl-font: 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei UI', 'Microsoft JhengHei', sans-serif;
+	--sl-font-mono: 'Cascadia Code', 'JetBrains Mono', Consolas, monospace;
+	--sl-line-height: 1.8;
+	/* 提示框和「準備中」標籤用的藍色，改成和品牌綠相配的青色（深色、淺色主題都會套用） */
+	--sl-hue-blue: 192;
+
+	/* 深色主題 */
+	--sl-color-accent-low: #133a2d;
+	--sl-color-accent: #3fae84;
+	--sl-color-accent-high: #b8ebd6;
+	--sl-color-white: #ffffff;
+	--sl-color-gray-1: #e4ebe7;
+	--sl-color-gray-2: #b9c6c0;
+	--sl-color-gray-3: #85958e;
+	--sl-color-gray-4: #56645f;
+	--sl-color-gray-5: #34403b;
+	--sl-color-gray-6: #1c2522;
+	--sl-color-black: #121816;
+
+	--vl-card-paper: #18201d;
+	--vl-card-edge: #2c3833;
+}
+
+:root[data-theme='light'] {
+	--sl-color-accent-low: #d5ede3;
+	--sl-color-accent: #1d7558;
+	--sl-color-accent-high: #0f4a37;
+	--sl-color-white: #15201c;
+	--sl-color-gray-1: #1f2b26;
+	--sl-color-gray-2: #34413b;
+	--sl-color-gray-3: #56645f;
+	--sl-color-gray-4: #84928c;
+	--sl-color-gray-5: #c3cdc8;
+	--sl-color-gray-6: #e6ece9;
+	--sl-color-gray-7: #f3f6f4;
+	--sl-color-black: #fbfcfb;
+
+	--vl-card-paper: #ffffff;
+	--vl-card-edge: #d4ddd8;
+}
+
+/* ---------- 首頁主視覺：第 1 課要做的「AI 提示詞收藏卡」 ---------- */
+
+.vl-hero-card {
+	margin: 0;
+	display: grid;
+	justify-items: center;
+	gap: 1.25rem;
+}
+
+.vl-card {
+	width: min(20rem, 100%);
+	padding: 1.25rem 1.25rem 1rem;
+	text-align: start;
+	background: var(--vl-card-paper);
+	border: 1px solid var(--vl-card-edge);
+	border-inline-start: 6px solid var(--sl-color-accent);
+	border-radius: 0.75rem;
+	box-shadow: 0.5rem 0.5rem 0 var(--sl-color-accent-low);
+	transform: rotate(-2deg);
+}
+
+.vl-card-tag {
+	display: inline-block;
+	margin: 0;
+	padding: 0 0.625rem;
+	border-radius: 999px;
+	font-size: var(--sl-text-xs);
+	background: var(--sl-color-accent-low);
+	color: var(--sl-color-accent-high);
+}
+
+.vl-card-title {
+	margin: 0.625rem 0 0.375rem;
+	font-size: var(--sl-text-xl);
+	font-weight: 700;
+	line-height: 1.4;
+	color: var(--sl-color-white);
+}
+
+.vl-card-prompt {
+	margin: 0;
+	font-size: var(--sl-text-sm);
+	line-height: 1.7;
+	color: var(--sl-color-gray-2);
+}
+
+.vl-card-fav {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.375rem;
+	margin-top: 0.875rem;
+	padding: 0.125rem 0.75rem;
+	border: 1px solid var(--vl-card-edge);
+	border-radius: 999px;
+	font-size: var(--sl-text-sm);
+	color: var(--sl-color-gray-2);
+}
+
+.vl-card-fav b {
+	color: var(--sl-color-accent);
+}
+
+.vl-hero-card figcaption {
+	font-size: var(--sl-text-sm);
+	color: var(--sl-color-gray-3);
+}
+
+/* ---------- 側邊欄上方的「學習進度」（數字和進度條由 T-010 的進度元件更新） ---------- */
+
+.vl-progress {
+	margin: 0 0 1rem;
+	padding: 0.75rem 0.875rem;
+	border: 1px solid var(--sl-color-hairline-light);
+	border-radius: 0.625rem;
+}
+
+.vl-progress-label {
+	display: flex;
+	justify-content: space-between;
+	margin: 0 0 0.5rem;
+	font-size: var(--sl-text-sm);
+	color: var(--sl-color-gray-2);
+}
+
+.vl-progress-label [data-vl-progress-count] {
+	font-weight: 600;
+	font-variant-numeric: tabular-nums;
+	color: var(--sl-color-white);
+}
+
+.vl-progress-track {
+	height: 0.375rem;
+	border-radius: 999px;
+	overflow: hidden;
+	background: var(--sl-color-hairline-light);
+}
+
+.vl-progress-fill {
+	width: 0;
+	height: 100%;
+	border-radius: inherit;
+	background: var(--sl-color-accent);
+	transition: width 0.4s ease;
+}
+
+/* 完成的課程：進度元件會在側邊欄的課程連結加上 data-vl-done="true"。
+   連結是 display: block，所以 ✓ 用絕對定位固定在右邊，不會換行。 */
+nav.sidebar a[data-vl-done='true'] {
+	position: relative;
+	padding-inline-end: 1.75rem;
+}
+
+nav.sidebar a[data-vl-done='true']::after {
+	content: '✓';
+	position: absolute;
+	inset-inline-end: 0.5rem;
+	top: 50%;
+	transform: translateY(-50%);
+	font-weight: 700;
+	color: var(--sl-color-accent);
+}
+
+/* 目前這一課的連結底色就是品牌綠，✓ 改用連結自己的文字色才看得到 */
+nav.sidebar a[aria-current='page'][data-vl-done='true']::after {
+	color: inherit;
+}
+
+/* ---------- 外殼的示範互動元件（T-009 做好正式元件後一起刪掉） ---------- */
+
+.vl-island-check {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	margin-top: 1rem;
+}
+
+.vl-island-check button {
+	padding: 0.25rem 1rem;
+	border: 0;
+	border-radius: 999px;
+	font: inherit;
+	cursor: pointer;
+	background: var(--sl-color-accent);
+	color: var(--sl-color-black);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.vl-progress-fill {
+		transition: none;
+	}
+}

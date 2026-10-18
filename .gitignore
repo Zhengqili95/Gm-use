@@ -14,6 +14,8 @@
 node_modules/
 dist/
 build/
+.astro/
+npm-debug.log*
 
 # 系統檔
 .DS_Store

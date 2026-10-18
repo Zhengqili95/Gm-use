@@ -1,0 +1,23 @@
+{
+  "name": "vibe-learn",
+  "type": "module",
+  "version": "0.0.1",
+  "scripts": {
+    "dev": "astro dev",
+    "start": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "@astrojs/preact": "^6.1.0",
+    "@astrojs/starlight": "^0.42.6",
+    "astro": "^7.2.10",
+    "preact": "^11.0.1",
+    "sharp": "^0.35.3"
+  },
+  "private": true,
+  "engines": {
+    "node": ">=22.22.0"
+  }
+}
