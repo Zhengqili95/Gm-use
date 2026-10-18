@@ -47,22 +47,38 @@ const server = http.createServer((req, res) => {
   send(res, 404, 'text/plain; charset=utf-8', 'Not found');
 });
 
-server.on('error', (err) => {
-  if (err.code === 'EADDRINUSE') {
-    console.error(`Port ${PORT} is already in use. The observer may already be running: open http://${HOST}:${PORT}`);
-  } else {
-    console.error(err);
-  }
+const URL_ = `http://${HOST}:${PORT}`;
+
+function openBrowser() {
+  if (!process.argv.includes('--open')) return;
+  const [cmd, args] = process.platform === 'win32' ? ['cmd', ['/c', 'start', '', URL_]]
+    : process.platform === 'darwin' ? ['open', [URL_]] : ['xdg-open', [URL_]];
+  spawn(cmd, args, { stdio: 'ignore', detached: true }).unref();
+}
+
+function portTaken() {
+  console.error(`埠號 ${PORT} 被別的程式占用了。可以設定環境變數 PORT 換一個號碼再執行。`);
   process.exit(1);
+}
+
+server.on('error', (err) => {
+  if (err.code !== 'EADDRINUSE') {
+    console.error(err);
+    process.exit(1);
+  }
+  // 埠號被占用時，先確認是不是觀察房已經在執行；是的話直接打開它
+  http.get({ host: HOST, port: PORT, path: '/api/state', timeout: 1500 }, (res) => {
+    res.resume();
+    if (res.statusCode !== 200) return portTaken();
+    console.log(`觀察房已經在執行了：${URL_}`);
+    openBrowser();
+    setTimeout(() => process.exit(0), 300);
+  }).on('error', portTaken).on('timeout', portTaken);
 });
 
 server.listen(PORT, HOST, () => {
-  const url = `http://${HOST}:${PORT}`;
-  console.log(`vibe-learn observer: ${url}`);
-  console.log(`Reading team files from ${TEAM_DIR}`);
-  if (process.argv.includes('--open')) {
-    const [cmd, args] = process.platform === 'win32' ? ['cmd', ['/c', 'start', '', url]]
-      : process.platform === 'darwin' ? ['open', [url]] : ['xdg-open', [url]];
-    spawn(cmd, args, { stdio: 'ignore', detached: true }).unref();
-  }
+  console.log(`vibe-learn 觀察房：${URL_}`);
+  console.log(`讀取的資料夾：${TEAM_DIR}`);
+  console.log('要關掉觀察房，關掉這個視窗就好。');
+  openBrowser();
 });
