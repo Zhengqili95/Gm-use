@@ -1,0 +1,646 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>vibe-learn 觀察房</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231D7558'/%3E%3Cpath d='M4 16c3.2-5.3 7.2-8 12-8s8.8 2.7 12 8c-3.2 5.3-7.2 8-12 8S7.2 21.3 4 16z' fill='%23fff'/%3E%3Ccircle cx='16' cy='16' r='4.5' fill='%231D7558'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- 標題字只下載「觀察房」三個字 -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700&text=%E8%A7%80%E5%AF%9F%E6%88%BF&display=swap">
+<style>
+  :root {
+    --paper: #F2F5F3;
+    --glass: #E5EBE8;
+    --ink: #17201D;
+    --muted: #56645F;
+    --rule: #D0D9D5;
+    --focus: #2F5DA8;
+    --c-user: #1D7558;
+    --c-claude-a: #B0441E;
+    --c-claude-b: #876200;
+    --c-codex: #2F5DA8;
+    --c-gemini: #7646BE;
+    --c-other: #56645F;
+    --s-todo: #56645F;
+    --s-doing: #2F5DA8;
+    --s-review: #876200;
+    --s-done: #1D7558;
+    --s-blocked: #B3261E;
+    --serif: "Noto Serif TC", "Songti TC", "PMingLiU", serif;
+    --sans: "Noto Sans TC", "Microsoft JhengHei UI", "Microsoft JhengHei", "PingFang TC", system-ui, sans-serif;
+    --mono: "Cascadia Mono", Consolas, "SF Mono", monospace;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #111715;
+      --glass: #19211E;
+      --ink: #E3EAE6;
+      --muted: #93A29C;
+      --rule: #28332F;
+      --focus: #8DB0F2;
+      --c-user: #5FC8A0;
+      --c-claude-a: #F0895C;
+      --c-claude-b: #DDB54C;
+      --c-codex: #86A9F2;
+      --c-gemini: #BC9DF2;
+      --c-other: #93A29C;
+      --s-todo: #93A29C;
+      --s-doing: #86A9F2;
+      --s-review: #DDB54C;
+      --s-done: #5FC8A0;
+      --s-blocked: #F28B82;
+      color-scheme: dark;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font: 16px/1.7 var(--sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  code { font-family: var(--mono); font-size: .875em; background: var(--glass); padding: 0 4px; border-radius: 4px; }
+  a { color: inherit; }
+
+  /* 版面：桌機是固定高度的兩欄，手機改成一欄、整頁捲動 */
+  .room { display: grid; grid-template-rows: auto auto 1fr; min-height: 100vh; }
+  .topbar {
+    display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between;
+    gap: 4px 24px; padding: 20px 28px 14px;
+  }
+  .title { margin: 0; font-family: var(--serif); font-size: 2rem; line-height: 1.2; letter-spacing: .06em; }
+  .subtitle { margin: 2px 0 0; color: var(--muted); font-size: .9375rem; }
+  .live { display: flex; align-items: center; gap: 8px; margin: 0; color: var(--muted); font-size: .875rem; font-variant-numeric: tabular-nums; }
+  .live .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--s-done); flex: none; }
+  .live.is-down { color: var(--s-blocked); }
+  .live.is-down .dot { background: var(--s-blocked); }
+
+  /* 會議桌：五個座位，顯示誰最後發言、誰還欠回覆 */
+  .table {
+    display: grid; grid-template-columns: repeat(5, minmax(0, 1fr));
+    margin: 0 28px; background: var(--glass); border: 1px solid var(--rule); border-radius: 14px; overflow: hidden;
+  }
+  .seat {
+    appearance: none; position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
+    padding: 16px 16px 14px; border: 0; border-left: 1px solid var(--rule); background: transparent;
+    color: inherit; font: inherit; text-align: left; cursor: pointer;
+  }
+  .seat:first-child { border-left: 0; }
+  .seat::before {
+    content: ""; position: absolute; top: 0; left: 16px; right: 16px; height: 3px;
+    background: var(--who); border-radius: 0 0 3px 3px;
+  }
+  .seat:hover { background: color-mix(in srgb, var(--who) 6%, transparent); }
+  .seat[aria-pressed="true"] { background: color-mix(in srgb, var(--who) 13%, transparent); }
+  .seat:focus-visible { outline-offset: -3px; }
+  .seat-name { color: var(--who); font-size: 1.0625rem; font-weight: 700; line-height: 1.4; }
+  .seat-role { color: var(--muted); font-size: .8125rem; line-height: 1.45; }
+  .seat-last { margin-top: 6px; font-size: .8125rem; font-variant-numeric: tabular-nums; }
+  .owes { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-top: 4px; font-size: .8125rem; }
+  .owes-label { color: var(--who); font-weight: 700; }
+  .owe {
+    padding: 0 8px; border-radius: 999px; font-weight: 700; font-variant-numeric: tabular-nums;
+    background: color-mix(in srgb, var(--who) 16%, transparent); color: var(--who);
+  }
+  .owe-none { color: var(--muted); }
+
+  .stage { display: grid; grid-template-columns: minmax(0, 1fr) 340px; margin: 14px 28px 0; min-height: 0; }
+  .pane { position: relative; display: flex; flex-direction: column; min-height: 0; padding-right: 24px; border-right: 1px solid var(--rule); }
+  .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--rule); }
+  .tab {
+    appearance: none; margin-bottom: -1px; padding: 8px 12px; border: 0; border-bottom: 2px solid transparent;
+    background: none; color: var(--muted); font: inherit; cursor: pointer;
+  }
+  .tab[aria-selected="true"] { color: var(--ink); font-weight: 700; border-bottom-color: var(--ink); }
+  .tab-meta { margin-left: auto; align-self: center; color: var(--muted); font-size: .8125rem; font-variant-numeric: tabular-nums; }
+  .filterbar { display: flex; align-items: center; gap: 12px; margin: 10px 0 0; padding: 6px 10px; border-radius: 8px; background: var(--glass); font-size: .875rem; }
+  .filterbar[hidden] { display: none; }
+  .link-button { appearance: none; padding: 0; border: 0; background: none; color: var(--focus); font: inherit; text-decoration: underline; cursor: pointer; }
+  .scroll { flex: 1; min-height: 0; overflow: auto; padding: 0 4px 48px 0; }
+
+  /* 討論紀錄：左邊時間欄，右邊用成員顏色的直線標出發言者 */
+  .day { padding: 22px 0 2px 88px; color: var(--muted); font-size: .8125rem; }
+  .msg { display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: 16px; padding: 16px 0; border-top: 1px solid var(--rule); }
+  .day + .msg { border-top: 0; }
+  .msg-gutter { padding-top: 2px; color: var(--muted); font-size: .8125rem; text-align: right; font-variant-numeric: tabular-nums; }
+  .msg-gutter time { display: block; color: var(--ink); font-size: .9375rem; }
+  .msg-main { max-width: 68ch; padding-left: 16px; border-left: 3px solid var(--who); }
+  .msg-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; }
+  .who { color: var(--who); font-weight: 700; }
+  .to { color: var(--muted); font-size: .8125rem; }
+  .msg-subject { margin: 2px 0 8px; font-size: 1.125rem; line-height: 1.5; }
+  .needs { margin: 10px 0 0; padding: 6px 10px; border-radius: 6px; background: color-mix(in srgb, var(--who) 9%, transparent); font-size: .9375rem; }
+  .needs strong { margin-right: 8px; color: var(--who); }
+  .cancels { margin: 8px 0 0; padding: 6px 10px; border-radius: 6px; background: var(--glass); color: var(--muted); font-size: .9375rem; }
+  .cancels strong { margin-right: 8px; color: var(--ink); }
+  .msg.is-target .msg-main { outline: 2px solid var(--who); outline-offset: 6px; }
+
+  .md > :first-child { margin-top: 0; }
+  .md p, .md ul, .md ol, .md blockquote, .md pre { margin: 0 0 .6em; }
+  .md ul, .md ol { padding-left: 1.4em; }
+  .md h3, .md h4, .md h5, .md h6 { margin: 1.1em 0 .4em; font-size: 1rem; line-height: 1.5; }
+  .md h3 { font-size: 1.125rem; }
+  .md blockquote { padding: 2px 12px; border-left: 3px solid var(--rule); color: var(--muted); }
+  .md pre { padding: 10px 12px; border-radius: 6px; background: var(--glass); overflow: auto; }
+  .md pre code { padding: 0; background: none; }
+  .md hr { border: 0; border-top: 1px solid var(--rule); }
+  .md a.ref { color: var(--focus); font-weight: 700; text-decoration: none; }
+  .md a.ref:hover { text-decoration: underline; }
+  .table-wrap { margin: .4em 0 .8em; overflow-x: auto; }
+  .md table { border-collapse: collapse; font-size: .875rem; line-height: 1.55; }
+  .md th, .md td { padding: 4px 8px; border: 1px solid var(--rule); text-align: left; vertical-align: top; }
+  .md th { background: var(--glass); }
+  .spec { max-width: 72ch; padding-top: 12px; }
+
+  .empty { margin: 32px 0; color: var(--muted); }
+  .newer {
+    position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%);
+    padding: 6px 14px; border: 0; border-radius: 999px; background: var(--ink); color: var(--paper);
+    font: inherit; font-size: .875rem; cursor: pointer;
+  }
+  .newer[hidden] { display: none; }
+
+  /* 右側：任務與定案 */
+  .rail { min-height: 0; overflow: auto; padding: 0 0 48px 24px; }
+  .rail h2 { display: flex; align-items: baseline; gap: 8px; margin: 10px 0 4px; font-size: 1rem; }
+  .rail h2 small { color: var(--muted); font-size: .8125rem; font-weight: 400; }
+  .rail section + section { margin-top: 20px; }
+  .tasks, .decisions { margin: 0; padding: 0; list-style: none; }
+  .task { padding: 10px 0; border-top: 1px solid var(--rule); }
+  .task:first-child { border-top: 0; }
+  .task-top { display: flex; align-items: center; gap: 8px; font-size: .8125rem; font-variant-numeric: tabular-nums; }
+  .pill { padding: 0 8px; border-radius: 999px; font-weight: 700; background: color-mix(in srgb, var(--status) 15%, transparent); color: var(--status); }
+  .task-title { margin: 2px 0 0; line-height: 1.55; }
+  .task-meta, .task-note { margin: 2px 0 0; color: var(--muted); font-size: .8125rem; line-height: 1.55; }
+  .owner { color: var(--who); font-weight: 700; }
+  .decision { border-top: 1px solid var(--rule); }
+  .decision:first-child { border-top: 0; }
+  .decision summary { display: flex; gap: 8px; padding: 8px 0; cursor: pointer; line-height: 1.5; }
+  .decision summary span { color: var(--muted); font-size: .8125rem; font-variant-numeric: tabular-nums; white-space: nowrap; padding-top: 2px; }
+  .decision .md { padding: 0 0 10px; font-size: .875rem; }
+  .footnote { margin: 28px 0 0; color: var(--muted); font-size: .8125rem; line-height: 1.6; word-break: break-all; }
+
+  @keyframes arrive { from { background: color-mix(in srgb, var(--who) 20%, transparent); } to { background: transparent; } }
+  @keyframes seat-pulse { from { box-shadow: inset 0 0 0 2px var(--who); } to { box-shadow: inset 0 0 0 2px transparent; } }
+  .msg.is-new { animation: arrive 2.4s ease-out; }
+  .seat.just-spoke { animation: seat-pulse 1.6s ease-out; }
+  @media (prefers-reduced-motion: reduce) {
+    .msg.is-new, .seat.just-spoke { animation: none; }
+    .msg.is-new { background: color-mix(in srgb, var(--who) 10%, transparent); }
+  }
+
+  @media (min-width: 960px) {
+    .room { height: 100vh; }
+  }
+  @media (max-width: 959px) {
+    .topbar { padding: 16px 16px 12px; }
+    .table { grid-template-columns: repeat(2, minmax(0, 1fr)); margin: 0 16px; }
+    .seat, .seat:first-child { border-left: 0; border-top: 1px solid var(--rule); }
+    .seat:nth-child(-n+2) { border-top: 0; }
+    .seat:nth-child(even) { border-left: 1px solid var(--rule); }
+    .seat:last-child:nth-child(odd) { grid-column: 1 / -1; }
+    .stage { grid-template-columns: minmax(0, 1fr); margin: 12px 16px 0; }
+    .pane { padding-right: 0; border-right: 0; }
+    .scroll { overflow: visible; }
+    .rail { overflow: visible; padding: 16px 0 40px; border-top: 1px solid var(--rule); }
+    .msg { grid-template-columns: 52px minmax(0, 1fr); gap: 10px; }
+    .day { padding-left: 62px; }
+  }
+</style>
+</head>
+<body>
+<div class="room">
+  <header class="topbar">
+    <div>
+      <h1 class="title">觀察房</h1>
+      <p class="subtitle">vibe-learn 團隊的討論，每 2 秒自動更新。這裡只能看，不能發言。</p>
+    </div>
+    <p class="live" id="live"><span class="dot" aria-hidden="true"></span><span id="live-text">連線中</span></p>
+  </header>
+
+  <div class="table" id="seats" role="group" aria-label="成員座位，點一下只看這位成員的留言"></div>
+
+  <main class="stage">
+    <div class="pane">
+      <div class="tabs" role="tablist">
+        <button type="button" class="tab" role="tab" id="tab-board" aria-selected="true" aria-controls="panel-board">討論區</button>
+        <button type="button" class="tab" role="tab" id="tab-spec" aria-selected="false" aria-controls="panel-spec">規格書</button>
+        <span class="tab-meta" id="tab-meta"></span>
+      </div>
+      <div class="filterbar" id="filterbar" hidden>
+        <span id="filtertext"></span>
+        <button type="button" class="link-button" id="clear-filter">顯示全部留言</button>
+      </div>
+      <div class="scroll" id="panel-board" role="tabpanel" aria-labelledby="tab-board">
+        <div id="board"><p class="empty">正在讀取討論區…</p></div>
+      </div>
+      <div class="scroll" id="panel-spec" role="tabpanel" aria-labelledby="tab-spec" hidden>
+        <div class="md spec" id="spec"></div>
+      </div>
+      <button type="button" class="newer" id="newer" hidden></button>
+    </div>
+
+    <aside class="rail">
+      <section>
+        <h2>任務 <small id="tasks-count"></small></h2>
+        <ul class="tasks" id="tasks"></ul>
+      </section>
+      <section>
+        <h2>定案 <small id="decisions-count"></small></h2>
+        <ul class="decisions" id="decisions"></ul>
+      </section>
+      <p class="footnote" id="footnote"></p>
+    </aside>
+  </main>
+</div>
+<div class="visually-hidden" aria-live="polite" id="announcer" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);"></div>
+
+<script>
+const SEATS = [
+  { key: 'claude-a', name: 'Claude-A', role: '主帳號的 Claude Code' },
+  { key: 'claude-b', name: 'Claude-B', role: '第二個帳號的 Claude Code' },
+  { key: 'codex', name: 'Codex', role: 'Codex App' },
+  { key: 'gemini', name: 'Gemini', role: 'Gemini App，由你轉貼' },
+  { key: 'user', name: '使用者', role: '專案負責人（你）' },
+];
+const STATUS = { '待開始': 'todo', '進行中': 'doing', '待審查': 'review', '完成': 'done', '卡住': 'blocked' };
+const POLL_MS = 2000;
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+const $ = (id) => document.getElementById(id);
+// stick：使用者沒有往上捲時為 true，畫面會一直停在最新留言
+const view = { texts: {}, mtimes: {}, missing: {}, msgs: [], seen: null, filter: null, tab: 'board', unread: 0, stick: true };
+
+// ---------- 小工具 ----------
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+function pad(n) { return String(n).padStart(2, '0'); }
+function todayStr() { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; }
+function fmtLongDate(s) {
+  const d = new Date(`${s}T00:00:00`);
+  return isNaN(d) ? s : d.toLocaleDateString('zh-TW', { month: 'long', day: 'numeric', weekday: 'long' });
+}
+function fmtShortDate(s) { const d = new Date(`${s}T00:00:00`); return isNaN(d) ? s : `${d.getMonth() + 1}/${d.getDate()}`; }
+function fmtClock(ms) { const d = new Date(ms); return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`; }
+function seatOf(sender) {
+  const base = String(sender || '').split(/[（(]/)[0].trim().toLowerCase();
+  return SEATS.find((s) => s.name.toLowerCase() === base) || null;
+}
+function seatByName(text) {
+  return SEATS.find((s) => String(text || '').includes(s.name)) || null;
+}
+function colorOf(seat) { return seat ? `var(--c-${seat.key})` : 'var(--c-other)'; }
+function empty(text) { return `<p class="empty">${esc(text)}</p>`; }
+
+// ---------- 安全的 Markdown 轉換（先跳脫所有 HTML，再套格式） ----------
+function inline(s) {
+  const codes = [];
+  let out = esc(s).replace(/`([^`]+)`/g, (m, c) => { codes.push(c); return `\u0000${codes.length - 1}\u0000`; });
+  out = out.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  out = out.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+  out = out.replace(/\b(M-\d{3,})\b/g, '<a class="ref" href="#$1" data-ref="$1">$1</a>');
+  return out.replace(/\u0000(\d+)\u0000/g, (m, i) => `<code>${codes[i]}</code>`);
+}
+const RE = {
+  fence: /^\s*```/, blank: /^\s*$/, heading: /^(#{1,6})\s+(.*)$/, hr: /^\s*(---|\*\*\*)\s*$/,
+  row: /^\s*\|.*\|\s*$/, sep: /^\s*\|[\s:|-]+\|\s*$/, quote: /^\s*>/, item: /^(\s*)([-*]|\d+\.)\s+(.*)$/,
+};
+function cells(line) { return line.trim().replace(/^\||\|$/g, '').split('|').map((c) => c.trim()); }
+function parseList(lines, start) {
+  const items = [];
+  let i = start;
+  while (i < lines.length) {
+    const m = lines[i].match(RE.item);
+    if (m) { items.push({ indent: m[1].length, ordered: /\d/.test(m[2]), text: m[3] }); i++; continue; }
+    if (items.length && /^\s{2,}\S/.test(lines[i])) { items[items.length - 1].text += `\n${lines[i].trim()}`; i++; continue; }
+    break;
+  }
+  let html = '';
+  const stack = [];
+  for (const it of items) {
+    while (stack.length && it.indent < stack[stack.length - 1].indent) html += `</li></${stack.pop().tag}>`;
+    const top = stack[stack.length - 1];
+    if (!top || it.indent > top.indent) {
+      const tag = it.ordered ? 'ol' : 'ul';
+      stack.push({ indent: it.indent, tag });
+      html += `<${tag}><li>`;
+    } else {
+      html += '</li><li>';
+    }
+    html += it.text.split('\n').map(inline).join('<br>');
+  }
+  while (stack.length) html += `</li></${stack.pop().tag}>`;
+  return { html, next: i };
+}
+function md(src) {
+  const lines = String(src || '').replace(/\r\n?/g, '\n').split('\n');
+  let html = '';
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+    if (RE.fence.test(line)) {
+      const buf = [];
+      i++;
+      while (i < lines.length && !RE.fence.test(lines[i])) buf.push(lines[i++]);
+      i++;
+      html += `<pre><code>${esc(buf.join('\n'))}</code></pre>`;
+      continue;
+    }
+    if (RE.blank.test(line)) { i++; continue; }
+    const h = line.match(RE.heading);
+    if (h) { const lv = Math.min(6, h[1].length + 2); html += `<h${lv}>${inline(h[2])}</h${lv}>`; i++; continue; }
+    if (RE.hr.test(line)) { html += '<hr>'; i++; continue; }
+    if (RE.row.test(line) && RE.sep.test(lines[i + 1] || '')) {
+      const head = cells(line);
+      const body = [];
+      i += 2;
+      while (i < lines.length && RE.row.test(lines[i])) body.push(cells(lines[i++]));
+      html += '<div class="table-wrap"><table><thead><tr>' + head.map((c) => `<th>${inline(c)}</th>`).join('')
+        + '</tr></thead><tbody>' + body.map((r) => '<tr>' + r.map((c) => `<td>${inline(c)}</td>`).join('') + '</tr>').join('')
+        + '</tbody></table></div>';
+      continue;
+    }
+    if (RE.quote.test(line)) {
+      const buf = [];
+      while (i < lines.length && RE.quote.test(lines[i])) buf.push(lines[i++].replace(/^\s*>\s?/, ''));
+      html += `<blockquote>${md(buf.join('\n'))}</blockquote>`;
+      continue;
+    }
+    if (RE.item.test(line)) { const r = parseList(lines, i); html += r.html; i = r.next; continue; }
+    const buf = [];
+    while (i < lines.length && !RE.blank.test(lines[i]) && !RE.heading.test(lines[i]) && !RE.fence.test(lines[i])
+      && !RE.item.test(lines[i]) && !RE.row.test(lines[i]) && !RE.quote.test(lines[i])) buf.push(lines[i++]);
+    html += `<p>${buf.map(inline).join('<br>')}</p>`;
+  }
+  return html;
+}
+
+// ---------- 解析 team/ 的檔案（格式見 AGENTS.md） ----------
+function parseBoard(text) {
+  const msgs = [];
+  let cur = null;
+  for (const line of String(text).replace(/\r\n?/g, '\n').split('\n')) {
+    const m = line.match(/^###\s*\[(M-[^\]]+)\]\s*(.*)$/);
+    if (m) { if (cur) msgs.push(cur); cur = { id: m[1].trim(), head: m[2], lines: [] }; continue; }
+    if (cur) cur.lines.push(line);
+  }
+  if (cur) msgs.push(cur);
+  return msgs.map((m) => {
+    const r = m.head.match(/^(\d{4}-\d{2}-\d{2})?\s*(\d{1,2}:\d{2})?\s*[·・]?\s*(.*?)\s*(?:→|->)\s*(.+)$/);
+    const msg = { id: m.id, date: '', time: '', from: m.head.trim(), to: '', subject: '', needs: '', cancels: '', body: '' };
+    if (r) Object.assign(msg, { date: r[1] || '', time: r[2] || '', from: r[3].trim(), to: r[4].trim().replace(/^@/, '') });
+    const body = [];
+    for (const l of m.lines) {
+      const s = l.match(/^\*\*主題\*\*[：:]\s*(.*)$/);
+      if (s && !msg.subject) { msg.subject = s[1]; continue; }
+      const n = l.match(/^\*\*需要回覆\*\*[：:]\s*(.*)$/);
+      if (n) { msg.needs = n[1].trim(); continue; }
+      const c = l.match(/^\*\*取消回覆\*\*[：:]\s*(.*)$/);
+      if (c) { msg.cancels = c[1].trim(); continue; }
+      body.push(l);
+    }
+    msg.body = body.join('\n').trim();
+    return msg;
+  });
+}
+function needsReply(m) { return m.needs && !/^無/.test(m.needs); }
+function computePending(msgs) {
+  const pending = Object.fromEntries(SEATS.map((s) => [s.key, []]));
+  msgs.forEach((m, i) => {
+    if (!needsReply(m)) return;
+    const targets = new Set(SEATS.filter((s) => m.needs.includes(s.name)).map((s) => s.key));
+    if (/全體/.test(m.needs)) SEATS.filter((s) => s.key !== 'user').forEach((s) => targets.add(s.key));
+    const sender = seatOf(m.from);
+    if (sender) targets.delete(sender.key);
+    for (const key of targets) {
+      const replied = msgs.slice(i + 1).some((later) => seatOf(later.from)?.key === key
+        && `${later.subject}\n${later.body}`.includes(m.id));
+      if (!replied) pending[key].push(m.id);
+    }
+  });
+  // 「**取消回覆**：Codex：M-001、M-005；Gemini：M-007」會把這些項目從待回覆拿掉
+  for (const m of msgs) {
+    for (const part of m.cancels.split(/[；;]/)) {
+      const seat = seatByName(part);
+      const ids = part.match(/M-\d{3,}/g) || [];
+      if (seat) pending[seat.key] = pending[seat.key].filter((id) => !ids.includes(id));
+    }
+  }
+  return pending;
+}
+function parseTasks(text) {
+  return String(text).split(/\r?\n/).filter((l) => /^\|\s*T-\d+/.test(l)).map((l) => {
+    const c = cells(l);
+    return { id: c[0], title: c[1], owner: c[2], path: c[3], status: c[4], reviewer: c[5], note: c[6] };
+  });
+}
+function parseDecisions(text) {
+  return String(text).replace(/\r\n?/g, '\n').split(/^## /m).slice(1).map((part) => {
+    const [first, ...rest] = part.split('\n');
+    const m = first.match(/^(D-\d+)\s*[·・]\s*(\S+)\s*[·・]\s*(.+)$/);
+    return m ? { id: m[1], date: m[2], title: m[3].trim(), body: rest.join('\n').trim() }
+      : { id: '', date: '', title: first.trim(), body: rest.join('\n').trim() };
+  });
+}
+
+// ---------- 畫面 ----------
+function renderSeats(pulse = []) {
+  const pending = computePending(view.msgs);
+  const today = todayStr();
+  $('seats').innerHTML = SEATS.map((s) => {
+    let last = null;
+    for (let i = view.msgs.length - 1; i >= 0; i--) if (seatOf(view.msgs[i].from)?.key === s.key) { last = view.msgs[i]; break; }
+    const lastText = last
+      ? `最後發言 ${last.date && last.date !== today ? `${fmtShortDate(last.date)} ` : ''}${last.time}`.trim()
+      : '還沒發言';
+    const owes = pending[s.key];
+    const owesHtml = owes.length
+      ? `<span class="owes-label">${s.key === 'user' ? '等你回覆' : '待回覆'}</span>${owes.map((id) => `<span class="owe">${esc(id)}</span>`).join('')}`
+      : '<span class="owe-none">沒有待回覆</span>';
+    return `<button type="button" class="seat${pulse.includes(s.key) ? ' just-spoke' : ''}" data-seat="${s.key}"
+      style="--who:${colorOf(s)}" aria-pressed="${view.filter === s.key}" title="只看 ${esc(s.name)} 的留言">
+      <span class="seat-name">${esc(s.name)}</span>
+      <span class="seat-role">${esc(s.role)}</span>
+      <span class="seat-last">${esc(lastText)}</span>
+      <span class="owes">${owesHtml}</span>
+    </button>`;
+  }).join('');
+}
+function renderBoard(newIds = []) {
+  const box = $('board');
+  if (view.missing.board) { box.innerHTML = empty('找不到討論區檔案 team/BOARD.md。觀察房要從專案主資料夾執行。'); return; }
+  const list = view.filter ? view.msgs.filter((m) => seatOf(m.from)?.key === view.filter) : view.msgs;
+  if (!list.length) { box.innerHTML = empty(view.filter ? '這位成員還沒發言。' : '還沒有人發言。成員發言後會出現在這裡。'); return; }
+  let html = '';
+  let prevDate = null;
+  for (const m of list) {
+    if (m.date && m.date !== prevDate) { html += `<div class="day">${esc(fmtLongDate(m.date))}</div>`; prevDate = m.date; }
+    html += `<article class="msg${newIds.includes(m.id) ? ' is-new' : ''}" id="${esc(m.id)}" style="--who:${colorOf(seatOf(m.from))}">
+      <div class="msg-gutter"><time>${esc(m.time)}</time>${esc(m.id)}</div>
+      <div class="msg-main">
+        <header class="msg-head"><span class="who">${esc(m.from)}</span>${m.to ? `<span class="to">給 ${esc(m.to)}</span>` : ''}</header>
+        ${m.subject ? `<h3 class="msg-subject">${inline(m.subject)}</h3>` : ''}
+        <div class="md">${md(m.body)}</div>
+        ${needsReply(m) ? `<p class="needs"><strong>需要回覆</strong>${inline(m.needs)}</p>` : ''}
+        ${m.cancels ? `<p class="cancels"><strong>取消回覆</strong>${inline(m.cancels)}</p>` : ''}
+      </div>
+    </article>`;
+  }
+  box.innerHTML = html;
+  if (newIds.length) setTimeout(() => box.querySelectorAll('.msg.is-new').forEach((el) => el.classList.remove('is-new')), 8000);
+}
+function renderFilter() {
+  const seat = SEATS.find((s) => s.key === view.filter);
+  $('filterbar').hidden = !seat;
+  if (seat) $('filtertext').textContent = `只顯示 ${seat.name} 的留言。`;
+}
+function renderTasks() {
+  const tasks = parseTasks(view.texts.tasks || '');
+  $('tasks-count').textContent = tasks.length ? `${tasks.filter((t) => t.status === '完成').length}/${tasks.length} 完成` : '';
+  if (view.missing.tasks) { $('tasks').innerHTML = `<li>${empty('找不到 team/TASKS.md。')}</li>`; return; }
+  if (!tasks.length) { $('tasks').innerHTML = `<li>${empty('任務表是空的。')}</li>`; return; }
+  $('tasks').innerHTML = tasks.map((t) => {
+    const owner = seatByName(t.owner);
+    return `<li class="task" style="--status:var(--s-${STATUS[t.status] || 'todo'})">
+      <div class="task-top"><span>${esc(t.id)}</span><span class="pill">${esc(t.status || '未填')}</span></div>
+      <p class="task-title">${inline(t.title || '')}</p>
+      <p class="task-meta"><span class="owner" style="--who:${colorOf(owner)}">${esc(t.owner || '未指定')}</span> 負責 ${inline(t.path || '')}</p>
+      ${t.note && t.note !== '—' ? `<p class="task-note">${inline(t.note)}</p>` : ''}
+    </li>`;
+  }).join('');
+}
+function renderDecisions() {
+  const list = parseDecisions(view.texts.decisions || '').reverse();
+  $('decisions-count').textContent = list.length ? `共 ${list.length} 項，最新的在上面` : '';
+  if (view.missing.decisions) { $('decisions').innerHTML = `<li>${empty('找不到 team/DECISIONS.md。')}</li>`; return; }
+  if (!list.length) { $('decisions').innerHTML = `<li>${empty('還沒有定案。')}</li>`; return; }
+  $('decisions').innerHTML = list.map((d) => `<li class="decision"><details>
+      <summary><span>${esc(d.id)}</span>${inline(d.title)}</summary>
+      <div class="md">${md(d.body)}</div>
+    </details></li>`).join('');
+}
+function renderSpec() {
+  $('spec').innerHTML = view.missing.spec ? empty('找不到 docs/SPEC.md。') : md(view.texts.spec);
+}
+function renderTabMeta() {
+  const key = view.tab === 'spec' ? 'spec' : 'board';
+  const t = view.mtimes[key];
+  $('tab-meta').textContent = t ? `最後修改 ${fmtClock(t).slice(0, 5)}` : '';
+}
+
+// ---------- 捲動與互動 ----------
+const boardScroll = $('panel-board');
+function nearBottom() { return boardScroll.scrollHeight - boardScroll.scrollTop - boardScroll.clientHeight < 120; }
+function toBottom() { boardScroll.scrollTop = boardScroll.scrollHeight; view.unread = 0; renderNewer(); }
+function renderNewer() {
+  $('newer').hidden = !view.unread;
+  $('newer').textContent = `有 ${view.unread} 則新留言，捲到最新`;
+}
+function setTab(tab) {
+  view.tab = tab;
+  for (const [t, panel] of [['board', 'panel-board'], ['spec', 'panel-spec']]) {
+    $(`tab-${t}`).setAttribute('aria-selected', String(t === tab));
+    $(panel).hidden = t !== tab;
+  }
+  if (tab === 'board') renderNewer(); else $('newer').hidden = true;
+  renderTabMeta();
+}
+function setFilter(key) {
+  view.filter = key;
+  renderSeats();
+  renderFilter();
+  renderBoard();
+  setTab('board');
+  toBottom();
+}
+$('seats').addEventListener('click', (e) => {
+  const seat = e.target.closest('.seat');
+  if (seat) setFilter(view.filter === seat.dataset.seat ? null : seat.dataset.seat);
+});
+$('clear-filter').addEventListener('click', () => setFilter(null));
+$('tab-board').addEventListener('click', () => setTab('board'));
+$('tab-spec').addEventListener('click', () => setTab('spec'));
+$('newer').addEventListener('click', toBottom);
+boardScroll.addEventListener('scroll', () => {
+  view.stick = nearBottom();
+  if (view.unread && view.stick) { view.unread = 0; renderNewer(); }
+});
+// 字型、版面或視窗大小晚一點才確定時，重新貼齊最新留言
+new ResizeObserver(() => {
+  if (view.stick && view.tab === 'board') boardScroll.scrollTop = boardScroll.scrollHeight;
+}).observe($('board'));
+document.addEventListener('click', (e) => {
+  const ref = e.target.closest('a.ref');
+  if (!ref) return;
+  e.preventDefault();
+  const id = ref.dataset.ref;
+  if (!document.getElementById(id) && view.filter) setFilter(null);
+  if (view.tab !== 'board') setTab('board');
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.scrollIntoView({ block: 'center', behavior: reduceMotion.matches ? 'auto' : 'smooth' });
+  el.classList.add('is-target');
+  setTimeout(() => el.classList.remove('is-target'), 1600);
+});
+
+// ---------- 每 2 秒讀一次資料 ----------
+function setLive(ok) {
+  $('live').classList.toggle('is-down', !ok);
+  $('live-text').textContent = ok
+    ? `即時更新中，最後檢查 ${fmtClock(Date.now())}`
+    : '讀不到資料：觀察房的伺服器可能關掉了。重新執行 tools/observer/start-observer.cmd 就能恢復。';
+}
+function apply(data) {
+  const changed = {};
+  for (const key of ['board', 'tasks', 'decisions', 'spec']) {
+    const f = data.files[key] || { text: '', missing: true };
+    if (view.texts[key] !== f.text || view.missing[key] !== !!f.missing) {
+      view.texts[key] = f.text;
+      view.mtimes[key] = f.mtime;
+      view.missing[key] = !!f.missing;
+      changed[key] = true;
+    }
+  }
+  $('footnote').textContent = `資料來源：${data.teamDir}`;
+  if (changed.board) {
+    const wasNear = view.stick;
+    view.msgs = parseBoard(view.texts.board || '');
+    const ids = view.msgs.map((m) => m.id);
+    const fresh = view.seen ? ids.filter((id) => !view.seen.has(id)) : [];
+    const first = !view.seen;
+    view.seen = new Set(ids);
+    const freshMsgs = view.msgs.filter((m) => fresh.includes(m.id));
+    renderSeats(freshMsgs.map((m) => seatOf(m.from)?.key).filter(Boolean));
+    renderBoard(fresh);
+    if (first || wasNear) toBottom();
+    else if (fresh.length && view.tab === 'board') { view.unread += fresh.length; renderNewer(); }
+    if (fresh.length) $('announcer').textContent = freshMsgs.map((m) => `${m.from} 發了新留言 ${m.id}`).join('。');
+  }
+  if (changed.tasks) renderTasks();
+  if (changed.decisions) renderDecisions();
+  if (changed.spec) renderSpec();
+  if (changed.board || changed.spec) renderTabMeta();
+}
+async function tick() {
+  try {
+    const res = await fetch('/api/state', { cache: 'no-store' });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    apply(await res.json());
+    setLive(true);
+  } catch {
+    setLive(false);
+  } finally {
+    setTimeout(tick, POLL_MS);
+  }
+}
+tick();
+</script>
+</body>
+</html>

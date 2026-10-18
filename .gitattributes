@@ -1,3 +1,7 @@
 # 統一用 LF 換行。不然 git 在 Windows 上會把檔案轉成 CRLF，
 # worktree 裡的 .sh 腳本就會在 bash 執行失敗。
 * text=auto eol=lf
+
+# Windows 的批次檔要用 CRLF，cmd.exe 才不會讀錯
+*.cmd text eol=crlf
+*.bat text eol=crlf
