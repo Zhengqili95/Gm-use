@@ -1,0 +1,204 @@
+/* 練習元件的樣式：只用 Starlight 的顏色變數，深色和淺色模式會自動跟著變 */
+
+.vl-ex {
+  margin: 1.5rem 0;
+  padding: 1rem;
+  border: 1px solid var(--sl-color-hairline-light);
+  border-radius: 0.75rem;
+  background: var(--sl-color-bg-nav);
+}
+
+.vl-ex-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.vl-ex-title {
+  margin: 0;
+  font-size: var(--sl-text-lg);
+}
+
+.vl-ex-badge {
+  padding: 0 0.625rem;
+  border-radius: 999px;
+  font-size: var(--sl-text-xs);
+  color: var(--sl-color-gray-2);
+  background: var(--sl-color-gray-5);
+}
+
+.vl-ex-badge[data-done='true'] {
+  color: var(--sl-color-accent-high);
+  background: var(--sl-color-accent-low);
+}
+
+.vl-ex-goal {
+  margin: 0.5rem 0 1rem;
+}
+
+/* 電腦：編輯區和預覽並排；手機：上下排列 */
+.vl-ex-body {
+  display: grid;
+  gap: 1rem;
+}
+
+@media (min-width: 50rem) {
+  .vl-ex-body {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.vl-ex-label {
+  margin: 0 0 0.25rem;
+  font-size: var(--sl-text-xs);
+  color: var(--sl-color-gray-3);
+}
+
+.vl-ex-textarea {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.625rem;
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 0.5rem;
+  font-family: var(--sl-font-mono);
+  font-size: 1rem; /* 至少 16px，iOS 才不會自動放大 */
+  line-height: 1.5;
+  color: var(--sl-color-text);
+  background: var(--sl-color-bg);
+  resize: vertical;
+  tab-size: 2;
+}
+
+.vl-ex-textarea:focus-visible {
+  outline: 2px solid var(--sl-color-accent);
+  outline-offset: 1px;
+}
+
+.vl-ex-tabs {
+  display: flex;
+  gap: 0.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.vl-ex-tab {
+  padding: 0.25rem 0.75rem;
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 999px;
+  font: inherit;
+  font-size: var(--sl-text-sm);
+  color: var(--sl-color-gray-2);
+  background: transparent;
+  cursor: pointer;
+}
+
+.vl-ex-tab[aria-selected='true'] {
+  color: var(--sl-color-accent-high);
+  background: var(--sl-color-accent-low);
+}
+
+.vl-ex-preview {
+  display: block;
+  width: 100%;
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 0.5rem;
+  background: #fff; /* 預覽就像一個瀏覽器視窗，頁面本身的底色是白的 */
+}
+
+.vl-ex-errors {
+  margin: 0.5rem 0 0;
+  padding-inline-start: 1.25rem;
+  font-size: var(--sl-text-sm);
+  color: var(--sl-color-red);
+}
+
+.vl-ex-others {
+  margin-top: 0.5rem;
+  font-size: var(--sl-text-sm);
+}
+
+.vl-ex-pre {
+  margin: 0 0 0.5rem;
+  padding: 0.625rem;
+  overflow-x: auto;
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 0.5rem;
+  font-family: var(--sl-font-mono);
+  font-size: var(--sl-text-sm);
+  background: var(--sl-color-bg-inline-code);
+}
+
+.vl-ex-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.vl-ex-button {
+  min-height: 2.75rem; /* 手機上至少 44px */
+  padding: 0.25rem 1rem;
+  border: 1px solid var(--sl-color-gray-4);
+  border-radius: 999px;
+  font: inherit;
+  color: var(--sl-color-text);
+  background: transparent;
+  cursor: pointer;
+}
+
+.vl-ex-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.vl-ex-primary {
+  border-color: transparent;
+  color: var(--sl-color-black);
+  background: var(--sl-color-accent);
+}
+
+.vl-ex-quiet {
+  border-color: transparent;
+  color: var(--sl-color-gray-3);
+}
+
+.vl-ex-feedback {
+  margin: 1rem 0 0;
+  padding: 0.625rem 0.875rem;
+  border-inline-start: 4px solid var(--sl-color-gray-3);
+  border-radius: 0.25rem;
+  background: var(--sl-color-bg);
+}
+
+.vl-ex-feedback[data-kind='pass'] {
+  border-color: var(--sl-color-green);
+}
+
+.vl-ex-feedback[data-kind='fail'] {
+  border-color: var(--sl-color-orange);
+}
+
+.vl-ex-feedback[data-kind='timeout'] {
+  border-color: var(--sl-color-red);
+}
+
+.vl-ex-hints {
+  margin: 1rem 0 0;
+  padding-inline-start: 1.25rem;
+  font-size: var(--sl-text-sm);
+}
+
+.vl-ex-solution {
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px dashed var(--sl-color-gray-4);
+}
+
+.vl-ex-todo {
+  padding: 0.75rem 1rem;
+  border: 1px dashed var(--sl-color-gray-4);
+  border-radius: 0.5rem;
+  color: var(--sl-color-gray-2);
+}
