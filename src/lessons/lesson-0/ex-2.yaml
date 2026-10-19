@@ -1,0 +1,40 @@
+# 開發用的測試練習（從 docs/CONTRACT.md 的範例複製）；lesson-0 不是真正的課。
+contract: 1
+id: lesson-0/ex-2
+type: preview
+title: "幫卡片換個顏色"
+goal: "把卡片的背景顏色改成淡黃色（lightyellow）"
+minutes: 2
+files:
+  index.html: |
+    <link rel="stylesheet" href="style.css">
+    <article class="card">
+      <h2 id="title">寫一封請假信</h2>
+      <p id="body">請幫我寫一封給老師的請假信，語氣有禮貌，100 字以內。</p>
+    </article>
+  style.css: |
+    .card {
+      padding: 16px;
+      border: 1px solid #999999;
+      background-color: white;
+    }
+editable: [style.css]
+solution:
+  style.css: |
+    .card {
+      padding: 16px;
+      border: 1px solid #999999;
+      background-color: lightyellow;
+    }
+checks:
+  - id: card-background
+    type: style
+    selector: ".card"
+    property: background-color
+    equals: "lightyellow"
+    hint: "背景顏色寫在 .card 的大括號裡，找 background-color 那一行。"
+hints:
+  - "CSS 用「屬性: 值;」的格式設定外觀，背景顏色就是一個屬性。"
+  - "打開 style.css，找到 .card 大括號裡的 background-color 那一行，改的是冒號後面的值。"
+  - "background-color: pink; 會讓背景變粉紅色；換成這題要的顏色名稱就好。"
+success: "顏色換好了！CSS 決定長相，不會動到內容。"

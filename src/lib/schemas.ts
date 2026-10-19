@@ -30,7 +30,7 @@ const checkId = z
 
 const source = z.strictObject({
   title: text,
-  url: z.string().url().startsWith('https://'),
+  url: z.url().startsWith('https://'),
 });
 
 export const lessonFrontmatter = z.object({

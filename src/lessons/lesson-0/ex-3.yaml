@@ -1,0 +1,51 @@
+# 開發用的測試練習（從 docs/CONTRACT.md 的範例複製）；lesson-0 不是真正的課。
+contract: 1
+id: lesson-0/ex-3
+type: preview
+title: "按下去會怎樣"
+goal: "補上一行，讓按鈕被按下去以後，文字變成「★ 已收藏」"
+minutes: 3
+files:
+  index.html: |
+    <article class="card">
+      <h2 id="title">寫一封請假信</h2>
+      <button id="fav" type="button">☆ 收藏</button>
+    </article>
+    <script src="script.js"></script>
+  script.js: |
+    const button = document.getElementById("fav");
+
+    button.addEventListener("click", function () {
+      // 在這裡補上一行：把按鈕的文字改成「★ 已收藏」
+    });
+editable: [script.js]
+solution:
+  script.js: |
+    const button = document.getElementById("fav");
+
+    button.addEventListener("click", function () {
+      button.textContent = "★ 已收藏";
+    });
+checks:
+  - id: starts-unfavorited
+    type: text
+    selector: "#fav"
+    equals: "☆ 收藏"
+    hint: "還沒按之前，按鈕的文字應該還是「☆ 收藏」，不要動到它。"
+  - id: after-click
+    type: text
+    selector: "#fav"
+    equals: "★ 已收藏"
+    steps:
+      - click: "#fav"
+    hint: "按下按鈕之後文字沒有變；看看 click 事件的大括號裡，有沒有補上改文字的那一行。"
+  - id: no-errors
+    type: noError
+    steps:
+      - click: "#fav"
+    hint: "程式出錯了；通常是少了分號、括號或引號，檢查你補的那一行。"
+hints:
+  - "JavaScript 可以在事件發生時（例如按下按鈕）執行一段程式，去改畫面上的東西。"
+  - "看 script.js 的 click 事件：大括號裡的註解就是要補上程式的地方。"
+  - "title.textContent = \"新標題\"; 會把 title 這個元素的文字換成新標題。"
+success: "你讓按鈕「有反應」了！這就是 JavaScript 管的行為。"

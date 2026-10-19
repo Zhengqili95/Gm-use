@@ -1,0 +1,31 @@
+# 開發用的測試練習（從 docs/CONTRACT.md 的範例複製）；lesson-0 不是真正的課。
+contract: 1
+id: lesson-0/ex-1
+type: preview
+title: "改掉卡片的標題"
+goal: "把卡片的標題改成「我的第一張提示詞卡」"
+minutes: 2
+files:
+  index.html: |
+    <article class="card">
+      <h2 id="title">寫一封請假信</h2>
+      <p id="body">請幫我寫一封給老師的請假信，語氣有禮貌，100 字以內。</p>
+    </article>
+editable: [index.html]
+solution:
+  index.html: |
+    <article class="card">
+      <h2 id="title">我的第一張提示詞卡</h2>
+      <p id="body">請幫我寫一封給老師的請假信，語氣有禮貌，100 字以內。</p>
+    </article>
+checks:
+  - id: title-text
+    type: text
+    selector: "#title"
+    equals: "我的第一張提示詞卡"
+    hint: "標題在 h2 標籤裡面；要改的是標籤中間的文字，不是標籤本身。"
+hints:
+  - "HTML 用標籤把內容包起來，標籤中間的文字就是畫面上看到的字。"
+  - "找到 id 是 title 的那一行，標籤中間的文字就是現在的標題。"
+  - "<p>你好</p> 會顯示「你好」；把中間的字換掉，畫面就跟著換。"
+success: "標題換好了！你剛剛改的是 HTML 的「內容」。"

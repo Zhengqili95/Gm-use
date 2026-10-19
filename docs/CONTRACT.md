@@ -1,7 +1,7 @@
 # vibe-learn 資料格式約定（CONTRACT）
 
 > **狀態**：草稿（T-005，Claude-B 起草，等 Claude-A 審）。
-> **版本**：約定 1.0；內容檔的 `contract` 欄位寫 `1`（主版本）。
+> **版本**：約定 1.1；內容檔的 `contract` 欄位寫 `1`（主版本）。
 > **依據**：`docs/SPEC.md`、D-011、D-012（課程順序、提示三層、批改看結果、三課共用「AI 提示詞收藏卡」、練習改一小段、圖解用 SVG）。
 > **可執行版本**：格式的細節以 `src/lib/schemas.ts`（zod schema）為準。文件和它不一致時，以 schemas.ts 為準，並在討論區回報，請 Claude-B 修文件。
 
@@ -208,7 +208,7 @@ import { Aside, Steps } from '@astrojs/starlight/components';
 |---|---|---|---|
 | `exists` | preview、api | `selector`；`count`（可省略） | 找得到元素。`count` 可以寫整數（剛好幾個），或 `{ min: 1, max: 3 }`（`min`、`max` 至少寫一個，而且 `min` 不能大於 `max`；`request` 的 `times` 也是同樣的寫法） |
 | `text` | preview、api | `selector`；`equals`、`includes`、`matches` 三選一；`all`、`ignoreCase`（可省略） | 元素的文字符合。比對前會把連續空白壓成一個空格並去掉頭尾。`matches` 是規則運算式（不用寫斜線和旗標）。預設看第一個符合的元素，`all: true` 則每一個都要符合 |
-| `attr` | preview、api | `selector`、`name`；`equals`、`includes`、`matches`、`present` 四選一 | 屬性值符合；`present: true` 表示有這個屬性就好 |
+| `attr` | preview、api | `selector`、`name`；`equals`、`includes`、`matches`、`present` 四選一 | 屬性值符合（比對前和 `text` 一樣，先把連續空白壓成一個空格）；`present: true` 表示有這個屬性就好，`present: false` 表示不能有這個屬性 |
 | `style` | preview、api | `selector`、`property`；`equals` 或 `oneOf` 二選一 | 瀏覽器實際算出來的樣式符合。顏色可以寫名稱、`#hex`、`rgb()`，會先統一換算再比；長度會換算成 px |
 | `noError` | preview、api | — | 載入和 `steps` 期間，沒有未處理的 JavaScript 錯誤 |
 | `request` | api | `method`、`path`；`times`、`query`、`bodyIncludes`（可省略） | 學習者的程式送出了符合的請求。`times` 預設至少一次；`bodyIncludes` 只比對你寫出的欄位 |
@@ -750,6 +750,8 @@ todo ──(檢查沒過)──▶ attempted ──(檢查過了)──▶ passe
 - 檢查沒過：只顯示「第一條沒過的檢查」的 `hint`，並提示還有幾條沒過。
 - 「看答案」在三層提示都看過、或檢查失敗滿 3 次之後才出現（規格書：先給提示，再讓學習者選要不要看答案）。
 - `passed` 和 `revealed` 都算完成；`revealed` 在進度裡另外標示。
+- 檢查**逾時**也算一次沒通過，不然學習者卡在無窮迴圈時，永遠等不到「看答案」。
+- **還原**：重新整理後，等元件水合（hydrate）完成，才把儲存的程式碼和進度讀回來，這樣才不會和伺服器端渲染出來的內容對不起來。
 - **自動存檔**：編輯後 300 ms 把目前的檔案存進進度儲存（B7），執行前也存一次。學習者的程式碰到無窮迴圈時，頁面可能卡住，重新整理就能恢復，而且程式碼不會丟。（第一版不做迴圈保護。）
 
 **手機**：編輯區用 `<textarea>`（`spellcheck="false"`、`autocapitalize="off"`、`autocorrect="off"`，字體至少 16px 避免 iOS 自動放大），預覽區疊在編輯區下面，按鈕要夠大。第一版不用 CodeMirror 或 Monaco（太重，手機也不好用）。
@@ -768,9 +770,10 @@ todo ──(檢查沒過)──▶ attempted ──(檢查過了)──▶ passe
 | iframe → 父頁 | `{ source: 'vibe', type: 'result', results: [{ id, passed }], requests, errors }` |
 
   sandbox 的 iframe 來源是字串 `"null"`，沒辦法比對來源網址，所以父頁用 `event.source === iframe.contentWindow` 確認，iframe 用 `event.source === window.parent` 確認。
-- **case**：`steps` 完全相同的檢查合成一個 case；每個 case 都從重新載入的 iframe 開始。單一 case 逾時 3 秒，逾時就讓這個 case 的檢查全部失敗並顯示「程式執行太久」。
+- **case**：`steps` 完全相同的檢查合成一個 case；每個 case 都從重新載入的 iframe 開始。單一 case 逾時 3 秒，逾時就讓這個 case 的檢查全部失敗並顯示「程式執行太久」。沒有 steps 的 case 逾時（程式一載入就停不下來），後面的 case 直接算失敗，不再各等一次逾時。
 - **`style` 比對**：建一個暫時的探針元素，把檢查的 `equals` 值設上去，讀它算出來的樣式，再和目標元素算出來的樣式比；這樣 `lightyellow`、`#ffffe0`、`rgb(255,255,224)` 都會算成同一個值。
 - **`noError`**：執行器在學習者的程式之前先掛上 `error` 和 `unhandledrejection` 的監聽。
+- **已在 Chromium 實測**（2026-10-19，T-009）：沙箱裡的程式碰 `parent.document`、`localStorage`、`document.cookie`、`top.location` 全部丟 `SecurityError`；`fetch`（含 `no-cors`）和 XMLHttpRequest 連外部網址都被擋住；預覽 iframe 跑 `while (true) {}` 時，父頁計時器的最大延遲只有 63 毫秒（設定的間隔是 50 毫秒），逾時機制正常運作。Firefox 和 Safari 還沒測，所以 B2 的「自動存檔」那條保留。
 - 之後可以加（不在第一版）：把學習者的 `console.log` 顯示在預覽下面。
 
 ## B4. 模擬伺服器（api）
@@ -806,9 +809,12 @@ todo ──(檢查沒過)──▶ attempted ──(檢查過了)──▶ passe
 ```ts
 interface ExerciseProgress {
   status: 'todo' | 'attempted' | 'passed' | 'revealed';
-  attempts: number;
+  attempts: number;              // 按「檢查」的總次數
+  failedAttempts: number;        // 其中沒通過的次數（滿 3 次就可以看答案）
   hintsShown: 0 | 1 | 2 | 3;
-  files: Record<string, string>; // 學習者目前的程式碼；sql 類型用 { query: '…' }
+  revealShown: boolean;          // 按過「看答案」
+  files: Record<string, string>; // 學習者改過的程式碼，只存可編輯的檔案；sql 類型用 { query: '…' }
+  lastFailedCheck?: { id: string; hint: string };
   updatedAt: string;             // ISO 時間
 }
 interface QuizProgress {
@@ -820,7 +826,8 @@ interface ProgressState {
 }
 ```
 
-- **API**：`getProgress()`、`updateExercise(id, patch)`、`updateQuiz(lessonId, questionId, patch)`、`subscribe(listener)`（回傳取消訂閱的函式）、`reset()`。有改動時，也在 `window` 上送出 `CustomEvent('vibe:progress', { detail: state })`；用 `storage` 事件讓不同分頁同步。
+- 只存學習者碰過的練習（編輯、檢查、看提示、看答案、重設），沒碰過的不留一筆空資料。
+- **API**：`getProgress()`、`getExercise(id)`、`updateExercise(id, patch)`、`updateQuiz(lessonId, questionId, patch)`、`subscribe(listener)`（回傳取消訂閱的函式）、`reset()`。有改動時，也在 `window` 上送出 `CustomEvent('vibe:progress', { detail: state })`；用 `storage` 事件讓不同分頁同步。
 - **一課完成**：課文 frontmatter `exercises` 裡每個練習都是 `passed` 或 `revealed`，而且測驗每題都 `done`。整體進度 = 已完成的課數 ÷ 正式上線的課數。
 - **側邊欄「學習進度」**：版面和接口由 Claude-A 的外殼決定（`src/components/layout/README.md`：更新 `[data-vl-progress-count]`、`[data-vl-progress-fill]`，完成的課程連結加 `data-vl-done="true"`）。側邊欄在每個課程頁都有，所以更新程式要在每一頁執行，不能只放在有練習的頁面：由進度元件的 `src/components/progress/sidebar-progress.ts` 負責，`Sidebar.astro` 只要有一行 `<script>import '../progress/sidebar-progress';</script>`。它從 `nav.sidebar a` 的網址（`/lessons/lesson-N/`）取出 `N` 對應到 `lesson-N`；總課數用 `[data-vl-progress]` 的 `data-vl-total`。
 - 第 2、3 課還沒做好時，檔案維持 `draft: true`：正式網站的側邊欄不會出現，`data-vl-total` 也只算已上線的課；首頁用卡片預告。
@@ -841,7 +848,7 @@ interface LessonContext {
     goal: string;
     status: 'todo' | 'attempted' | 'passed' | 'revealed';
     hintsShown: 0 | 1 | 2 | 3;   // 已經展開到第幾層提示
-    files: Record<string, string>;                    // 學習者目前的程式碼
+    files: Record<string, string>;                    // 學習者目前的程式碼（含唯讀的檔案，AI 才看得懂整個頁面）
     lastFailedCheck?: { id: string; hint: string };   // 最近一次沒過的檢查
   }>;
 }
@@ -849,7 +856,10 @@ interface LessonContext {
 
 - `activeExerciseId` 讓 AI 知道學習者現在問的是哪一題；`hintsShown` 讓 AI 的提示可以從下一層開始，不重複學習者已經看過的（Claude-A 在 M-031 的建議）。
 
-- `text` 取自課文區的 `innerText`，並排除有 `data-no-context` 屬性的元素。標準答案、還沒展開的提示、測驗的正確答案，在學習者主動展開之前根本不放進 DOM；已展開的部分，由 T-013 決定要不要給 AI（預設不給）。
+- `text` 取自課文區（`.sl-markdown-content`）的文字，段落、標題、清單、程式碼區塊之間會換行；排除有 `data-no-context` 屬性的元素（整個練習區、標準答案），也排除 `script`、`style`、`svg`、`iframe`、`textarea`、`button`、螢幕閱讀器專用的 `sr-only` 和標題旁的錨點連結。標準答案、還沒展開的提示、測驗的正確答案，在學習者主動展開之前根本不放進 DOM；已展開的部分，由 T-013 決定要不要給 AI（預設不給）。
+- `exercises` 只含已經載入的練習（練習用 `client:visible`，捲到才載入），而且是即時的（練習元件載入後登記自己，學習者剛打的字也看得到，不用等存檔）。
+- `lessonId` 從網址 `/lessons/lesson-N/` 取；不在課程頁時（例如開發用的 `/dev/lab/`），改用第一個練習 id 的前綴。
+- 除了 `window.vibeLearn.getContext()`，也可以直接 `import { getContext } from '../../lib/learn-context'`，是同一份。
 - 伺服器端怎麼組 prompt、檢查哪些欄位，由 T-013 決定；這裡只保證資料的形狀。
 
 ## B9. 建置檢查（三個指令）
@@ -904,3 +914,4 @@ interface LessonContext {
 | 版本 | 日期 | 內容 |
 |---|---|---|
 | 1.0 草稿 | 2026-10-18 | 第一版：課程檔、練習（preview、api、sql）、測驗、圖解、進度與事件、建置檢查 |
+| 1.1 | 2026-10-19 | 照 T-009 的實測補充，都是補充或釐清，內容檔不用改：沙箱安全規則在 Chromium 的驗證結果、逾時的處理（逾時也算沒通過；沒有 steps 的 case 逾時，後面的 case 直接失敗）、`attr` 的空白處理和 `present: false`、進度儲存多了 `failedAttempts`、`revealShown`、`lastFailedCheck` 和 `getExercise`、`getContext()` 的細節 |

@@ -1,0 +1,27 @@
+---
+// 課文裡的 <Exercise id="lesson-1/ex-1" />：依 id 取練習資料，交給互動元件（docs/CONTRACT.md B2）。
+import { getEntry } from 'astro:content';
+import ExerciseApp from './ExerciseApp.tsx';
+import './exercise.css';
+
+interface Props {
+	id: string;
+}
+
+const { id } = Astro.props;
+const entry = await getEntry('exercises', id);
+if (!entry) {
+	throw new Error(`找不到練習「${id}」：請確認 src/lessons/${id}.yaml 存在，而且課文裡的 id 寫對了。`);
+}
+const exercise = entry.data;
+---
+
+{
+	exercise.type === 'preview' ? (
+		<ExerciseApp client:visible exercise={exercise} />
+	) : (
+		<p class="vl-ex-todo">
+			「{exercise.title}」是 {exercise.type} 類型的練習，這個元件還沒支援（api 由 T-014、sql 由 T-015 負責）。
+		</p>
+	)
+}
