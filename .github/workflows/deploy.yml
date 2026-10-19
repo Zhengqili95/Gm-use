@@ -1,6 +1,7 @@
 # 把網站發布到 GitHub Pages（Astro 官方建議的流程）。
 # 注意：上線前要先在 astro.config.mjs 填好 site 和 base（等 T-018），
 # 並在 GitHub repo 的 Settings → Pages 把來源設成 GitHub Actions。
+# 建置前會先跑 npm run check:content（docs/CONTRACT.md B9），沒過就不建置、不上線。
 name: Deploy to GitHub Pages
 
 on:
@@ -19,8 +20,10 @@ jobs:
     steps:
       - name: Checkout your repository using git
         uses: actions/checkout@v7
-      - name: Install, build, and upload your site
+      - name: Install, check content, build, and upload your site
         uses: withastro/action@v6
+        with:
+          build-cmd: npm run check:content && npm run build
 
   deploy:
     needs: build

@@ -1,0 +1,14 @@
+---
+// 首頁主視覺那張卡的「☆ 收藏」按鈕（T-012）：按一下變成「★ 已收藏」，就是第 1 課最後會做出來的效果。
+// 卡片本身寫在 src/content/docs/index.mdx 的 hero.image.html。
+---
+
+<script>
+	for (const button of document.querySelectorAll<HTMLButtonElement>('.vl-hero-card .vl-card-fav')) {
+		button.addEventListener('click', () => {
+			const on = button.dataset.on !== 'true';
+			button.dataset.on = String(on);
+			button.textContent = on ? '★ 已收藏' : '☆ 收藏';
+		});
+	}
+</script>

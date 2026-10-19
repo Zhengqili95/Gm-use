@@ -10,25 +10,27 @@ hero:
       <figure class="vl-hero-card">
         <div class="vl-card">
           <p class="vl-card-tag">寫作</p>
-          <p class="vl-card-title">把會議紀錄整理成重點</p>
-          <p class="vl-card-prompt">「請把下面的會議紀錄整理成 5 個重點，每點不超過 20 個字，最後列出待辦事項和負責人。」</p>
-          <span class="vl-card-fav"><b>★</b> 已收藏 3 次</span>
+          <p class="vl-card-title">寫一封請假信</p>
+          <p class="vl-card-prompt">請幫我寫一封給老師的請假信，語氣有禮貌，100 字以內。</p>
+          <button class="vl-card-fav" type="button">☆ 收藏</button>
         </div>
-        <figcaption>第 1 課，你會親手做出這張卡。</figcaption>
+        <figcaption>第 1 課，你會親手做出這張卡。按按看「收藏」。</figcaption>
       </figure>
+  # 第 1 課還沒上線（draft: true）時，這顆按鈕會自動拿掉（src/components/layout/route-data.ts）
   actions:
     - text: 開始第 1 課
       link: lessons/lesson-1/
       icon: right-arrow
 ---
 
+import LessonList from '../../components/layout/LessonList.astro';
+import FavToggle from '../../components/layout/FavToggle.astro';
+
 ## 三堂課，做出同一張卡
 
 整套課程都圍繞一張「AI 提示詞收藏卡」，每一課替它加上一個新本事。
 
-1. [**畫面是怎麼拼出來的**](lessons/lesson-1/)：用 HTML、CSS、JavaScript 做出卡片，按下「收藏」，數字就會變。
-2. [**網頁怎麼跟外界拿資料**](lessons/lesson-2/)：卡片的內容改成向伺服器要。
-3. [**資料怎麼存下來不消失**](lessons/lesson-3/)：把收藏存進資料庫，重新整理也不會不見。
+<LessonList />
 
 ## 怎麼學
 
@@ -36,3 +38,5 @@ hero:
 - 練習都是「改一小段」：填空、改一個值、補一行，手機上也做得了。
 - 按下「檢查」馬上知道對不對。卡住了先看提示，真的想不出來再看答案。
 - 學習進度存在這台裝置的瀏覽器裡，不用註冊、不用登入。
+
+<FavToggle />
