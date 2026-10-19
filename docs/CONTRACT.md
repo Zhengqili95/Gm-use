@@ -860,7 +860,7 @@ interface LessonContext {
 
 1. 所有內容檔通過 `schemas.ts`，`contract` 等於 `CONTRACT_VERSION`；`id` 等於檔案路徑。
 2. `lessons/` 底下的課文，必填欄位都有；檔名是 `lesson-N.mdx` 而且 `N` 等於 `lesson`；`sidebar.order` 等於 `lesson`。
-3. `exercises`、`quiz` 指到的檔案都存在，並且和課文裡的 `<Exercise id>`、`<Quiz id>` 一一對應。
+3. `exercises`、`quiz` 指到的檔案都存在，並且和課文裡的 `<Exercise id>`、`<Quiz id>` 一一對應；課文裡每個 `<Diagram name>` 指到的 SVG 檔也要存在。
 4. `draft: false` 的課，`gates` 三項都是 `true`。
 5. 圖解：能被 XML 解析、有 `viewBox`（寬 320～480）、有 `<title>`；沒有寫死的顏色（`style` 以外的 `fill`、`stroke` 不是 `none`／`url(#…)`；`style` 裡先去掉 `var(…)`，剩下的沒有 `#hex`、`rgb()`、顏色名稱）；沒有 `<script>`、`<style>`、`<foreignObject>`、`<image>`、`on…` 屬性、外部連結。
 6. 測驗：每題剛好一個正確答案（schema 已檢查）。
