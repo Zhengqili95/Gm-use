@@ -1,0 +1,22 @@
+# 預期：✗ 起始內容就通過全部檢查，學習者不用改就過關
+contract: 1
+id: lesson-1/ex-4
+type: preview
+title: "不用改就過關"
+goal: "標題要有「提示詞卡」"
+minutes: 2
+files:
+  index.html: |
+    <h2 id="title">我的第一張提示詞卡</h2>
+editable: [index.html]
+solution:
+  index.html: |
+    <h2 id="title">我的第二張提示詞卡</h2>
+checks:
+  - id: title-text
+    type: text
+    selector: "#title"
+    includes: "提示詞卡"
+    hint: "看標題。"
+hints: ["一", "二", "三"]
+success: "好"

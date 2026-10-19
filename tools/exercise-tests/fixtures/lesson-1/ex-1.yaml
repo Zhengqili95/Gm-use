@@ -1,0 +1,26 @@
+# 預期：✗ 標準答案沒過：card-background（標準答案和起始內容一樣，M-051 驗收第 2 點）
+contract: 1
+id: lesson-1/ex-1
+type: preview
+title: "標準答案沒改到"
+goal: "把卡片的背景顏色改成淡黃色（lightyellow）"
+minutes: 2
+files:
+  index.html: |
+    <link rel="stylesheet" href="style.css">
+    <article class="card"><h2 id="title">寫一封請假信</h2></article>
+  style.css: |
+    .card { background-color: white; }
+editable: [style.css]
+solution:
+  style.css: |
+    .card { background-color: white; }
+checks:
+  - id: card-background
+    type: style
+    selector: ".card"
+    property: background-color
+    equals: "lightyellow"
+    hint: "找 background-color 那一行。"
+hints: ["一", "二", "三"]
+success: "好"
