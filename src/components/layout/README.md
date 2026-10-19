@@ -16,3 +16,9 @@
 ## `IslandCheck.tsx`：示範用的互動元件
 
 只用來確認 Preact 能在 Starlight 頁面裡正常運作。T-009 做好正式的練習元件後，連同 `src/content/docs/lessons/lesson-1.mdx` 裡的引用一起刪掉。
+
+## 首頁（T-012）
+
+- `LessonList.astro`：首頁「三堂課，做出同一張卡」下面的課程卡片。課名、說明、時間從課文的 frontmatter 讀（標題要寫成「第 N 課｜課名」，卡片只放後半）。`draft: true` 的課標「即將推出」、不放連結（D-013 做法 A）；課文改成 `draft: false`，卡片就自動變成可以點。
+- `route-data.ts`：Starlight 的路由中介層，在 `astro.config.mjs` 的 `routeMiddleware` 登記。首頁主視覺的按鈕如果連到還沒上線的課，就拿掉。
+- `FavToggle.astro`：首頁主視覺那張卡的「☆ 收藏」按鈕，按一下變成「★ 已收藏」。卡片本身寫在 `src/content/docs/index.mdx` 的 `hero.image.html`，樣式在 `src/styles/theme.css`。

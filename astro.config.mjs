@@ -16,6 +16,8 @@ export default defineConfig({
 				root: { label: '繁體中文', lang: 'zh-TW' },
 			},
 			customCss: ['./src/styles/theme.css'],
+			// 首頁的按鈕不連到還沒上線的課，說明見 src/components/layout/README.md
+			routeMiddleware: './src/components/layout/route-data.ts',
 			components: {
 				// 在側邊欄上方加「學習進度」區塊，說明見 src/components/layout/README.md
 				Sidebar: './src/components/layout/Sidebar.astro',

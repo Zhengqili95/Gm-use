@@ -1,0 +1,43 @@
+---
+// 首頁的課程清單（T-012）：已上線的課整張卡都可以點；還沒上線的（draft: true）標「即將推出」、不放連結（D-013 做法 A）。
+// 課名、說明、時間都從課文的 frontmatter 讀，課文改了這裡會跟著變。
+import { getCollection } from 'astro:content';
+
+const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
+const lessons = (await getCollection('docs', ({ id }) => /^lessons\/lesson-\d+$/.test(id)))
+	.map(({ id, data }) => {
+		// 標題寫成「第 1 課｜畫面是怎麼拼出來的」，卡片上只放後半
+		const name = data.title.split('｜')[1] ?? data.title;
+		return {
+			href: `${base}${id}/`,
+			number: data.lesson ?? Number(id.replace(/\D+/g, '')),
+			name,
+			description: data.description,
+			minutes: data.minutes,
+			live: !data.draft,
+		};
+	})
+	.sort((a, b) => a.number - b.number);
+---
+
+<ol class="vl-lessons not-content">
+	{
+		lessons.map((lesson) => (
+			<li class="vl-lesson" data-live={lesson.live ? 'true' : 'false'}>
+				<p class="vl-lesson-number">第 {lesson.number} 課</p>
+				<h3 class="vl-lesson-title">{lesson.live ? <a href={lesson.href}>{lesson.name}</a> : lesson.name}</h3>
+				{lesson.description && <p class="vl-lesson-desc">{lesson.description}</p>}
+				<p class="vl-lesson-meta">
+					{lesson.live ? (
+						<>
+							{lesson.minutes ? `約 ${lesson.minutes} 分鐘・` : ''}開始上課
+							<span aria-hidden="true"> →</span>
+						</>
+					) : (
+						<span class="vl-lesson-soon">即將推出</span>
+					)}
+				</p>
+			</li>
+		))
+	}
+</ol>
