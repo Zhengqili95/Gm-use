@@ -7,7 +7,8 @@
     "start": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "test:schemas": "node --test src/lib/schemas.test.mjs"
   },
   "dependencies": {
     "@astrojs/preact": "^6.1.0",
@@ -19,5 +20,8 @@
   "private": true,
   "engines": {
     "node": ">=22.22.0"
+  },
+  "devDependencies": {
+    "yaml": "^2.9.1"
   }
 }
