@@ -3,11 +3,13 @@ import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 import preact from '@astrojs/preact';
 
-// 發布到 GitHub Pages 前要加上 site 和 base（等 T-018 決定 GitHub 帳號和 repo 名稱）：
-//   site: 'https://<帳號>.github.io',
-//   base: '/<repo 名稱>',
 // https://astro.build/config
 export default defineConfig({
+	// 網站發布在 GitHub Pages：https://zhengqili95.github.io/Gm-use/ （T-018：帳號 Zhengqili95、repo Gm-use）。
+	// 所有網址都在 base 底下，連結不要寫死 /lessons/...，用相對路徑或 import.meta.env.BASE_URL。
+	// repo 改名時 base 要一起改，大小寫要和 repo 名稱一樣。
+	site: 'https://zhengqili95.github.io',
+	base: '/Gm-use',
 	integrations: [
 		starlight({
 			title: 'vibe-learn',

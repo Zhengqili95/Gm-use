@@ -102,7 +102,7 @@ D:\02_開發與專案\鳴潮用\vibe-learn\team\
 ## 網站開發（Astro + Starlight）
 
 - 第一次在專案根目錄（或自己的 worktree）執行 `npm install`。
-- 本機預覽：`npm run dev`，網址是 http://localhost:4321 。不能一直佔著終端機的工具，可以改用 `npx astro dev --background`，再用 `npx astro dev status`、`npx astro dev logs`、`npx astro dev stop` 管理。
+- 本機預覽：`npm run dev`，網址是 http://localhost:4321/Gm-use/ （`astro.config.mjs` 的 `base` 是 `/Gm-use`，所有網址都在它底下）。不能一直佔著終端機的工具，可以改用 `npx astro dev --background`，再用 `npx astro dev status`、`npx astro dev logs`、`npx astro dev stop` 管理。
 - 正式建置：`npm run build`，輸出到 `dist/`。合併到 `main` 前，`npm run build` 一定要成功。
 - 課程頁放在 `src/content/docs/lessons/`，側邊欄的「課程」群組會自動產生；元件放在 `src/components/` 底下自己負責的資料夾。
 - 側邊欄「學習進度」區塊的接口，寫在 `src/components/layout/README.md`。
