@@ -69,7 +69,8 @@ Gemini 讀不到檔案，第一次要貼完整的背景：
 需要先裝好 Node.js（這台電腦已經有了）。在 `vibe-learn` 資料夾打開終端機：
 
 1. 第一次先執行 `npm install`，安裝網站需要的套件。
-2. 執行 `npm run dev`，然後用瀏覽器打開 http://localhost:4321 。
+2. 執行 `npm run dev`，然後用瀏覽器打開 http://localhost:4321/Gm-use/ 。
+   （網站發布在 GitHub Pages 的 `/Gm-use/` 底下，所以本機的網址也多這一層。正式網址是 https://zhengqili95.github.io/Gm-use/ 。）
 3. 要停止時，在終端機按 `Ctrl + C`。
 
 ## 檔案在哪裡
