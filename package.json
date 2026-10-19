@@ -8,7 +8,9 @@
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
-    "test:schemas": "node --test src/lib/schemas.test.mjs"
+    "test:schemas": "node --test src/lib/schemas.test.mjs",
+    "check:content": "node src/lib/check-content/cli.mjs",
+    "test:check": "node --test src/lib/check-content/check-content.test.mjs"
   },
   "dependencies": {
     "@astrojs/preact": "^6.1.0",
@@ -22,6 +24,7 @@
     "node": ">=22.22.0"
   },
   "devDependencies": {
+    "saxes": "^6.0.0",
     "yaml": "^2.9.1"
   }
 }
