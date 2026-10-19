@@ -65,4 +65,19 @@ describe('答題流程', () => {
     const passed = check(initialFlow, true);
     assert.equal(check(passed, false).status, 'passed');
   });
+
+  it('attempts 記的是按「檢查」的總次數（通過和沒通過都算），failedAttempts 只算沒通過的', () => {
+    let flow = check(initialFlow, false);
+    flow = check(flow, false);
+    flow = check(flow, true);
+    assert.equal(flow.attempts, 3);
+    assert.equal(flow.failedAttempts, 2);
+  });
+
+  it('還原：用儲存的進度取代目前的狀態', () => {
+    const saved = { status: 'attempted', attempts: 4, failedAttempts: 4, hintsShown: 2, revealShown: false };
+    const flow = reduce(initialFlow, { type: 'restore', flow: saved });
+    assert.deepEqual(flow, saved);
+    assert.equal(canReveal(flow), true); // 失敗滿 3 次，還原後仍然可以看答案
+  });
 });

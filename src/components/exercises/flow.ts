@@ -5,14 +5,19 @@ export type Status = 'todo' | 'attempted' | 'passed' | 'revealed';
 
 export interface Flow {
   status: Status;
-  failedAttempts: number; // 檢查沒通過的次數
+  attempts: number; // 按「檢查」的總次數
+  failedAttempts: number; // 其中沒通過的次數
   hintsShown: 0 | 1 | 2 | 3; // 已經展開到第幾層提示
   revealShown: boolean; // 學習者按過「看答案」
 }
 
-export type FlowAction = { type: 'check'; passed: boolean } | { type: 'hint' } | { type: 'reveal' };
+export type FlowAction =
+  | { type: 'check'; passed: boolean }
+  | { type: 'hint' }
+  | { type: 'reveal' }
+  | { type: 'restore'; flow: Flow }; // 重新整理後，從儲存的進度還原
 
-export const initialFlow: Flow = { status: 'todo', failedAttempts: 0, hintsShown: 0, revealShown: false };
+export const initialFlow: Flow = { status: 'todo', attempts: 0, failedAttempts: 0, hintsShown: 0, revealShown: false };
 
 // 三層提示都看過，或檢查失敗滿 3 次，才可以選擇「看答案」（規格書：先給提示，再讓學習者選要不要看答案）
 export function canReveal(flow: Flow): boolean {
@@ -22,17 +27,20 @@ export function canReveal(flow: Flow): boolean {
 export function reduce(flow: Flow, action: FlowAction): Flow {
   switch (action.type) {
     case 'check': {
+      const attempts = flow.attempts + 1;
       if (action.passed) {
         // 看過答案之後才通過，算 revealed（不算 passed）；兩者都算完成
-        return { ...flow, status: flow.revealShown ? 'revealed' : 'passed' };
+        return { ...flow, attempts, status: flow.revealShown ? 'revealed' : 'passed' };
       }
       const done = flow.status === 'passed' || flow.status === 'revealed';
-      return { ...flow, status: done ? flow.status : 'attempted', failedAttempts: flow.failedAttempts + 1 };
+      return { ...flow, attempts, status: done ? flow.status : 'attempted', failedAttempts: flow.failedAttempts + 1 };
     }
     case 'hint':
       return flow.hintsShown >= 3 ? flow : { ...flow, hintsShown: (flow.hintsShown + 1) as 1 | 2 | 3 };
     case 'reveal':
       return canReveal(flow) ? { ...flow, revealShown: true } : flow;
+    case 'restore':
+      return action.flow;
   }
 }
 
