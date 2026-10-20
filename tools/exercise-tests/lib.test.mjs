@@ -85,11 +85,18 @@ describe('基本格式', () => {
 		assert.equal(SKIPPED.preview, undefined);
 	});
 	it('sql 練習要有 setup、starter、solution', () => {
-		const sql = { type: 'sql', setup: 'CREATE TABLE t(a);', starter: 'SELECT 1;', solution: 'SELECT a FROM t;', checks: [{ id: 'c', type: 'rows' }] };
+		const sql = { type: 'sql', setup: 'CREATE TABLE t(a);', starter: 'SELECT 1;', solution: 'SELECT a FROM t;', checks: [{ id: 'c', type: 'rows', equals: [[1]] }] };
 		assert.equal(shapeProblem(sql), null);
 		assert.equal(shapeProblem({ ...sql, setup: undefined }), '沒有 setup');
 		assert.equal(shapeProblem({ ...sql, starter: '   ' }), '沒有 starter');
 		assert.equal(shapeProblem({ ...sql, solution: 42 }), '沒有 solution');
+	});
+	it('sql 的檢查寫錯時說清楚是哪一條（M-083 建議 1）', () => {
+		const sql = { type: 'sql', setup: 'CREATE TABLE t(a);', starter: 'SELECT 1;', solution: 'SELECT a FROM t;' };
+		assert.equal(shapeProblem({ ...sql, checks: [{ id: 'c', type: 'text', equals: [[1]] }] }), '檢查「c」的 type 要是 rows 或 state');
+		assert.equal(shapeProblem({ ...sql, checks: [{ id: 'c', type: 'rows' }] }), '檢查「c」沒有 equals');
+		assert.equal(shapeProblem({ ...sql, checks: [{ id: 'c', type: 'state', equals: [[1]] }] }), '檢查「c」沒有 query');
+		assert.equal(shapeProblem({ ...sql, checks: [{ id: 'c', type: 'state', query: 'SELECT a FROM t', equals: [[1]] }] }), null);
 	});
 });
 

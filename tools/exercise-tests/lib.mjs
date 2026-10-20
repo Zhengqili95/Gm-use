@@ -60,6 +60,12 @@ export function shapeProblem(data) {
 		for (const field of ['setup', 'starter', 'solution']) {
 			if (typeof data[field] !== 'string' || !data[field].trim()) return `沒有 ${field}`;
 		}
+		// 檢查本身的形狀也先看一下，不然寫錯 YAML 時印出來的是看不懂的 JS 錯誤（M-083 建議 1）
+		for (const check of data.checks) {
+			if (check.type !== 'rows' && check.type !== 'state') return `檢查「${check.id}」的 type 要是 rows 或 state`;
+			if (!Array.isArray(check.equals)) return `檢查「${check.id}」沒有 equals`;
+			if (check.type === 'state' && typeof check.query !== 'string') return `檢查「${check.id}」沒有 query`;
+		}
 		return null;
 	}
 	if (!isRecord(data.files) || typeof data.files['index.html'] !== 'string') return 'files 裡沒有 index.html';
