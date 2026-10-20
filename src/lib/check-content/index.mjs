@@ -5,19 +5,22 @@ import { pathToFileURL } from 'node:url';
 import { parseDocument } from 'yaml';
 import { z } from 'astro/zod';
 import { CONTRACT_VERSION, exerciseSchema, lessonFrontmatter, quizSchema } from '../schemas.ts';
-import { checkSvg } from './svg.mjs';
+import { analyzeSvg } from './svg.mjs';
 
 // Use the MDX parser already selected and locked by Astro. Resolve through its
 // dependency owner instead of relying on npm hoisting a transitive dependency.
 const astroRequire = createRequire(import.meta.resolve('astro'));
 const markdownRequire = createRequire(astroRequire.resolve('@astrojs/markdown-satteri'));
 const { mdxToMdast } = await import(pathToFileURL(markdownRequire.resolve('satteri')).href);
-const pageSchema = lessonFrontmatter.required().extend({
+const starlightFields = {
   title: z.string().trim().min(1),
   description: z.string().trim().min(1),
   sidebar: z.object({ order: z.number().int().min(1) }),
-  draft: z.boolean(),
-});
+};
+const pageSchema = lessonFrontmatter.required().extend({ ...starlightFields, draft: z.boolean() });
+// Drafts (draft: true) only need these four fields; every other field may be left
+// out, and the ones that are written are still checked in full (contract 2.1).
+const draftSchema = lessonFrontmatter.extend({ ...starlightFields, draft: z.literal(true) });
 const slash = p => p.split(path.sep).join('/');
 const clean = value => String(value).replace(/[\r\n\u2028\u2029]+/g, ' ');
 
@@ -54,10 +57,16 @@ export async function checkContent(root) {
   function validate(schema, value, file) {
     const parsed = schema.safeParse(value);
     if (parsed.success) return parsed.data;
+    // Missing required fields become one line per file, not one line per field.
+    const missing = parsed.error.issues
+      .filter(issue => issue.code === 'invalid_type' && issue.path.reduce((part, key) => part?.[key], value) === undefined)
+      .map(issue => issue.path.join('.') || '內容');
+    if (missing.length) report(file, '缺少必填欄位：' + missing.join('、'));
     for (const issue of parsed.error.issues) {
       const input = issue.path.reduce((part, key) => part?.[key], value);
+      if (issue.code === 'invalid_type' && input === undefined) continue;
       const messages = {
-        invalid_type: input === undefined ? '缺少必填欄位' : '欄位型別錯誤，預期 ' + issue.expected,
+        invalid_type: '欄位型別錯誤，預期 ' + issue.expected,
         invalid_value: '必須是允許的值：' + JSON.stringify(issue.values),
         invalid_union: '內容不符合任何允許的格式',
         unrecognized_keys: '含有未定義的欄位：' + (issue.keys ?? []).join('、'),
@@ -79,13 +88,26 @@ export async function checkContent(root) {
   const files = await walk('src/lessons', file => file === 'src/lessons/lesson-0');
   const dataFiles = new Map();
   const diagramFiles = new Set();
+  const lessonSvgIds = new Map();
   for (const file of files) {
     if (/\.svg$/i.test(file)) {
       const match = file.match(/^src\/lessons\/(lesson-[1-9]\d*)\/diagrams\/([a-z][a-z0-9]*(?:-[a-z0-9]+)*)\.svg$/);
       if (!match) report(file, '圖解檔名或路徑格式錯誤');
       else diagramFiles.add(match[1] + '/' + match[2]);
       const source = await read(file);
-      if (source !== null) for (const reason of checkSvg(source)) report(file, reason);
+      if (source !== null) {
+        const { errors: problems, ids } = analyzeSvg(source);
+        for (const reason of problems) report(file, reason);
+        if (match) {
+          // One lesson page holds several diagrams, and an id must be unique in the page.
+          const seen = lessonSvgIds.get(match[1]) ?? new Map();
+          lessonSvgIds.set(match[1], seen);
+          for (const id of ids) {
+            if (seen.has(id)) report(file, 'SVG id 和同一課的另一張圖重複：' + id + '（' + seen.get(id) + '）');
+            else seen.set(id, path.posix.basename(file));
+          }
+        }
+      }
       continue;
     }
     if (!/\.ya?ml$/i.test(file)) continue;
@@ -103,10 +125,17 @@ export async function checkContent(root) {
     if (value?.contract !== CONTRACT_VERSION) report(file, 'contract 必須等於 ' + CONTRACT_VERSION);
   }
   const referenced = new Set();
+  // Per lesson number: does the page spell out its exercise list / quiz? When it
+  // does not (field missing or frontmatter unreadable) the real error is already
+  // reported, so its exercise and quiz files are not also flagged as unreferenced.
+  const declares = new Map();
   for (const file of pages) {
     if (!/\.(md|mdx)$/i.test(file)) continue;
     const filename = file.match(/^src\/content\/docs\/lessons\/lesson-([1-9]\d*)\.mdx$/);
     if (!filename) report(file, '課文檔名必須是 lesson-N.mdx，課號不補零');
+    const fileNumber = filename ? Number(filename[1]) : null;
+    const declared = { exercises: false, quiz: false };
+    if (fileNumber !== null) declares.set(fileNumber, declared);
     const source = await read(file);
     if (source === null) continue;
     const fm = source.match(/^\uFEFF?---[ \t]*\r?\n([\s\S]*?)^---[ \t]*\r?$(?:\n|$)/m);
@@ -114,15 +143,30 @@ export async function checkContent(root) {
     let value;
     try { value = yaml(fm[1]); }
     catch (e) { report(file, 'frontmatter YAML 解析失敗：' + e.message); continue; }
-    const lesson = validate(pageSchema, value, file);
+    // Whatever references can be read count as referenced, even when the page has
+    // another error: its exercises and quiz are not reported as unreferenced too.
+    if (Array.isArray(value?.exercises)) {
+      declared.exercises = true;
+      for (const id of value.exercises) if (typeof id === 'string') referenced.add(id);
+    }
+    if (typeof value?.quiz === 'string') {
+      declared.quiz = true;
+      referenced.add(value.quiz);
+    }
+    const lesson = validate(value?.draft === true ? draftSchema : pageSchema, value, file);
     if (!lesson) continue;
-    const lessonId = 'lesson-' + lesson.lesson;
-    if (filename && Number(filename[1]) !== lesson.lesson) report(file, '檔名課號必須等於 lesson');
-    if (lesson.sidebar.order !== lesson.lesson) report(file, 'sidebar.order 必須等於 lesson');
-    if (!new RegExp('^第\\s*' + lesson.lesson + '\\s*課｜.+').test(lesson.title)) report(file, 'title 應為「第 N 課｜課名」且 N 等於 lesson');
-    if (!lesson.draft && !Object.values(lesson.gates).every(v => v === true)) report(file, 'draft: false 時 gates 三項必須都是 true');
-    if (new Set(lesson.exercises).size !== lesson.exercises.length) report(file, 'exercises 不可重複');
-    for (const id of [...lesson.exercises, lesson.quiz]) {
+    // A draft may leave out `lesson`; the number in the file name stands in for it.
+    const number = lesson.lesson ?? fileNumber;
+    if (number === null) continue;
+    const named = lesson.lesson === undefined ? '檔名的課號' : ' lesson';
+    const lessonId = 'lesson-' + number;
+    if (lesson.lesson !== undefined && filename && fileNumber !== lesson.lesson) report(file, '檔名課號必須等於 lesson');
+    if (lesson.sidebar.order !== number) report(file, 'sidebar.order 必須等於' + named);
+    if (!new RegExp('^第\\s*' + number + '\\s*課｜.+').test(lesson.title)) report(file, 'title 應為「第 N 課｜課名」且 N 等於' + named);
+    if (lesson.draft === false && !Object.values(lesson.gates).every(v => v === true)) report(file, 'draft: false 時 gates 三項必須都是 true');
+    const exercises = lesson.exercises ?? [];
+    if (new Set(exercises).size !== exercises.length) report(file, 'exercises 不可重複');
+    for (const id of [...exercises, ...(lesson.quiz ? [lesson.quiz] : [])]) {
       referenced.add(id);
       if (!id.startsWith(lessonId + '/')) report(file, 'exercises／quiz 必須指向同一課的內容：' + id);
       if (!dataFiles.has(id)) report(file, '引用的內容檔不存在：' + id);
@@ -158,9 +202,24 @@ export async function checkContent(root) {
       for (const child of node.children ?? []) visit(child);
     }
     visit(tree);
-    if (JSON.stringify(actual.Exercise) !== JSON.stringify(lesson.exercises)) report(file, '<Exercise id> 必須與 exercises 依序一一對應，不能遺漏、重複或額外引用');
-    if (JSON.stringify(actual.Quiz) !== JSON.stringify([lesson.quiz])) report(file, '<Quiz id> 必須與 quiz 一一對應且只出現一次');
+    const quizzes = lesson.quiz ? [lesson.quiz] : [];
+    if (JSON.stringify(actual.Exercise) !== JSON.stringify(exercises)) {
+      report(file, lesson.exercises === undefined
+        ? '課文放了 <Exercise>，frontmatter 卻沒有 exercises'
+        : '<Exercise id> 必須與 exercises 依序一一對應，不能遺漏、重複或額外引用');
+    }
+    if (JSON.stringify(actual.Quiz) !== JSON.stringify(quizzes)) {
+      report(file, lesson.quiz === undefined
+        ? '課文放了 <Quiz>，frontmatter 卻沒有 quiz'
+        : '<Quiz id> 必須與 quiz 一一對應且只出現一次');
+    }
   }
-  for (const [id, file] of dataFiles) if (!referenced.has(id)) report(file, '內容檔未被任何課文引用：' + id);
+  for (const [id, file] of dataFiles) {
+    if (referenced.has(id)) continue;
+    const [, lessonNumber, kind] = id.match(/^lesson-(\d+)\/(quiz|ex-\d+)$/);
+    const page = declares.get(Number(lessonNumber));
+    if (page && !page[kind === 'quiz' ? 'quiz' : 'exercises']) continue;
+    report(file, '內容檔未被任何課文引用：' + id);
+  }
   return errors;
 }

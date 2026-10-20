@@ -9,8 +9,17 @@ const internalUrl = /^url\(\s*(['"]?)#[a-zA-Z_][\w:.-]*\1\s*\)$/i;
 const colorProperty = /^(?:fill|stroke|color|stop-color|flood-color|lighting-color|background(?:-color)?|border(?:-(?:top|right|bottom|left))?-color)$/i;
 const names = new Set(('aliceblue antiquewhite aqua aquamarine azure beige bisque black blanchedalmond blue blueviolet brown burlywood cadetblue chartreuse chocolate coral cornflowerblue cornsilk crimson cyan darkblue darkcyan darkgoldenrod darkgray darkgreen darkgrey darkkhaki darkmagenta darkolivegreen darkorange darkorchid darkred darksalmon darkseagreen darkslateblue darkslategray darkslategrey darkturquoise darkviolet deeppink deepskyblue dimgray dimgrey dodgerblue firebrick floralwhite forestgreen fuchsia gainsboro ghostwhite gold goldenrod gray green greenyellow grey honeydew hotpink indianred indigo ivory khaki lavender lavenderblush lawngreen lemonchiffon lightblue lightcoral lightcyan lightgoldenrodyellow lightgray lightgreen lightgrey lightpink lightsalmon lightseagreen lightskyblue lightslategray lightslategrey lightsteelblue lightyellow lime limegreen linen magenta maroon mediumaquamarine mediumblue mediumorchid mediumpurple mediumseagreen mediumslateblue mediumspringgreen mediumturquoise mediumvioletred midnightblue mintcream mistyrose moccasin navajowhite navy oldlace olive olivedrab orange orangered orchid palegoldenrod palegreen paleturquoise palevioletred papayawhip peachpuff peru pink plum powderblue purple rebeccapurple red rosybrown royalblue saddlebrown salmon sandybrown seagreen seashell sienna silver skyblue slateblue slategray slategrey snow springgreen steelblue tan teal thistle tomato turquoise violet wheat white whitesmoke yellow yellowgreen transparent currentcolor').split(' '));
 
+// Static diagrams only: timing/animation elements are not part of the authored contract.
+const animation = new Set(['animate', 'animatecolor', 'animatemotion', 'animatetransform', 'set', 'discard']);
+
 // This validates the authored diagram contract; it is not a runtime SVG sanitizer.
 export function checkSvg(source) {
+  return analyzeSvg(source).errors;
+}
+
+// Same checks as checkSvg, plus the ids the diagram defines, so the caller can
+// reject an id that two diagrams of the same lesson both use (one page, one id).
+export function analyzeSvg(source) {
   const errors = [];
   const fail = reason => errors.push(reason);
   const stack = [];
@@ -29,6 +38,7 @@ export function checkSvg(source) {
     stack.push(node);
     if (tag.uri !== NS) fail('SVG 元素 xmlns／namespace 必須是 ' + NS);
     if (['script', 'style', 'foreignobject', 'image'].includes(tag.local.toLowerCase())) fail('SVG 不允許 <' + tag.local + '>');
+    if (animation.has(tag.local.toLowerCase())) fail('SVG 不允許動畫元素 <' + tag.local + '>，圖解必須是靜態的');
     if (tag.local === 'svg' && parent) fail('圖解只能有一個 svg');
     if (attrs.id) {
       if (!/^[a-z][a-z0-9]*-[\w.-]+$/.test(attrs.id)) fail('SVG id 必須有圖解名稱或縮寫前綴：' + attrs.id);
@@ -83,9 +93,9 @@ export function checkSvg(source) {
   parser.on('cdata', text => { if (stack.length) stack.at(-1).text += text; });
   parser.on('closetag', () => stack.pop());
   try { parser.write(source).close(); }
-  catch (e) { return ['SVG XML 解析失敗：' + e.message]; }
+  catch (e) { return { errors: ['SVG XML 解析失敗：' + e.message], ids: [] }; }
   const root = nodes[0];
-  if (!root || root.name !== 'svg') { fail('根元素必須是 svg'); return errors; }
+  if (!root || root.name !== 'svg') { fail('根元素必須是 svg'); return { errors, ids: [...ids] }; }
   const view = (root.attrs.viewBox ?? '').trim().split(/[\s,]+/).map(Number);
   if (view.length !== 4 || !view.every(Number.isFinite) || view[0] !== 0 || view[1] !== 0 ||
       view[2] < 320 || view[2] > 480 || view[3] <= 0) fail('viewBox 必須為 0 0 寬 高，寬 320～480，高大於 0');
@@ -99,7 +109,7 @@ export function checkSvg(source) {
   // Count explicit box/node primitives; semantic nodes drawn as paths require review.
   if (nodes.filter(n => ['rect', 'circle', 'ellipse'].includes(n.name) && !insideDefs(n)).length > 8) fail('SVG 最多 8 個方塊或節點');
   for (const ref of refs) if (!ids.has(ref)) fail('SVG 內部連結指向不存在的 id：' + ref);
-  return [...new Set(errors)];
+  return { errors: [...new Set(errors)], ids: [...ids] };
 }
 
 function insideDefs(node) {

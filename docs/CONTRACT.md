@@ -1,7 +1,7 @@
 # vibe-learn 資料格式約定（CONTRACT）
 
 > **狀態**：草稿（T-005，Claude-B 起草，等 Claude-A 審）。
-> **版本**：約定 1.1；內容檔的 `contract` 欄位寫 `1`（主版本）。
+> **版本**：約定 1.2；內容檔的 `contract` 欄位寫 `1`（主版本）。
 > **依據**：`docs/SPEC.md`、D-011、D-012（課程順序、提示三層、批改看結果、三課共用「AI 提示詞收藏卡」、練習改一小段、圖解用 SVG）。
 > **可執行版本**：格式的細節以 `src/lib/schemas.ts`（zod schema）為準。文件和它不一致時，以 schemas.ts 為準，並在討論區回報，請 Claude-B 修文件。
 
@@ -63,6 +63,8 @@
 | `quiz` | 是 | 這課測驗的 id |
 | `gates` | 是 | 三道關卡的狀態：`sources`（來源）、`review`（交叉審查）、`trial`（使用者試讀）。新課三個都寫 `false` |
 | `draft` | 是 | `true` 時正式網站不顯示這一課；**三道關卡都 `true` 才能改成 `false`**（Starlight 內建欄位） |
+
+**草稿課文（`draft: true`）可以少寫欄位**（約定 1.2）：只有 `title`、`description`、`sidebar.order`、`draft` 一定要有；其他欄位可以先不寫，**有寫的欄位照常全部檢查**（格式、引用的練習和測驗檔要存在、課文裡的 `<Exercise>`、`<Quiz>` 要對得上）。草稿沒寫 `lesson` 時，課號以檔名 `lesson-N.mdx` 的 `N` 為準，`title`（「第 N 課｜…」）和 `sidebar.order` 都要等於它。課文準備上線、把 `draft` 改成 `false` 時，上表所有「必填」的欄位都要補齊。
 
 ### 2.2 課文的樣子
 
@@ -579,11 +581,12 @@ questions:
 
 - 只有一個 `<svg>`，有 `xmlns="http://www.w3.org/2000/svg"` 和 `viewBox="0 0 寬 高"`；**寬在 320～480 之間**（手機上才看得清楚）。不寫固定的 `width`、`height`。
 - 第一個子元素是 `<title>`（圖的短名稱），接著 `<desc>`（一句話說明）。
-- 文字只用 `<text>`，字體大小至少 14（以 viewBox 的單位計）。不要把文字畫成圖形。
+- 文字只用 `<text>`（可以用 `<tspan>`）。**每一段文字的 `font-size` 都要至少 14**，單位是 viewBox 的單位：寫成 `font-size="16"` 或 `16px`，可以寫在 `<text>` 上，也可以寫在外層的 `<g>`、`<svg>` 上讓它繼承；不要用 `em`、`%`、`pt`，也不要用 `font` 簡寫。不要把文字畫成圖形。
 - **顏色只能寫在 `style` 屬性裡，並且用下表的變數**。不要寫死顏色（`#336699`、`red`、`rgb(…)`），這樣網站切到深色模式時，圖才會跟著變色。`fill="none"` 可以用。
-- 圖裡的 `id`（例如箭頭的 `<marker id>`）要加圖的名稱當前綴，例如 `bs-arrow`，因為整個網頁的 `id` 不能重複。
-- 不可以有：`<script>`、`<style>`、`<foreignObject>`、`<image>`、`on…` 事件屬性，以及指向外部的連結（`href`、`xlink:href` 只能指向同一個檔案裡的 `#id`）。
+- 圖裡的 `id`（例如箭頭的 `<marker id>`）要加圖的名稱當前綴，例如 `bs-arrow`，因為整個網頁的 `id` 不能重複。一課會放好幾張圖，所以**同一課所有圖解的 `id` 合起來也不能重複**：兩張圖不要都叫 `bs-arrow`，各用自己的前綴。
+- 不可以有：`<script>`、`<style>`、`<foreignObject>`、`<image>`、動畫元素（`<animate>`、`<animateColor>`、`<animateMotion>`、`<animateTransform>`、`<set>`、`<discard>`；圖解是靜態的）、`on…` 事件屬性，以及指向外部的連結（`href`、`xlink:href` 只能指向同一個檔案裡的 `#id`）。
 - 一張圖最多 8 個方塊或節點；不要只靠顏色傳達意思，要配上文字。
+- **文字不要擠到邊**（`check:content` 量不到，作者自己和審稿人要看）：方塊裡的文字，寬度不要超過方塊寬度的 90%（左右各留 5% 以上的空隙）；箭頭旁邊的說明文字，要比兩個方塊之間的距離短，不能碰到方塊的邊框或箭頭。估算字寬：中文字約等於 1 個 `font-size`，英文字母和數字約 0.6 個。實際寬度會因為字型不同而變，所以要留餘裕；最後以網站在瀏覽器裡的樣子（淺色、深色、手機寬度）為準。
 
 **可用的顏色變數**（寫成 `style="fill: var(--sl-color-text)"` 的形式）
 
@@ -672,7 +675,7 @@ questions:
 ### 7.2 YAML 寫法提醒
 
 1. 縮排用 2 個空格，不要用 Tab。
-2. 單行文字一律用**雙引號**包起來；文字裡需要引號時，改用「」，不要用 ASCII 的雙引號。
+2. 單行文字用**雙引號**包起來。文字裡需要出現 ASCII 的雙引號時（例如語法範例 `<button id="send">`），整段文字改用**單引號**包起來，例如 `hint: '看 <button id="send"> 的 id 有沒有寫對。'`；裡面如果有單引號，連寫兩個 `''`。一般敘述需要加引號（不是程式碼）時，用「」。多行的程式碼不受這條限制，照第 3 點用 `|` 區塊。
 3. 程式碼（HTML、CSS、JavaScript、SQL）一律用 `|` 區塊。
 4. 選擇器（`"#title"`、`".card"`）一定要加引號，因為 `#` 在 YAML 裡是註解的開頭。
 5. `true`、`false`、`null` 和數字不加引號。
@@ -688,8 +691,9 @@ questions:
 - [ ] 每條檢查都有 `id` 和 `hint`；檢查看的是結果，不是程式碼字串。
 - [ ] 標準答案通過所有檢查；起始內容至少有一條沒通過。
 - [ ] 三層提示的順序是：觀念提醒、檢查位置、語法範例；第三層不是標準答案。
+- [ ] 語法範例裡的引號是真正的 ASCII 引號（整段文字用單引號包起來），不是「」。
 - [ ] 測驗每題剛好一個正確答案，每個選項都有 `explain`。
-- [ ] 圖解沒有寫死的顏色、沒有外部連結，`viewBox` 寬度在 320～480。
+- [ ] 圖解沒有寫死的顏色、沒有外部連結、沒有動畫元素，`viewBox` 寬度在 320～480；每段文字的 `font-size` 至少 14、沒有擠到邊；同一課的圖，`id` 不重複。
 - [ ] 術語第一次出現時附了中文；新術語列在備註。
 - [ ] `sources` 至少 2 筆，都是官方文件；沒把握的網址寫在備註，沒有自己編。
 - [ ] 用自己的話寫，沒有複製來源或其他課程的內容。
@@ -791,8 +795,8 @@ todo ──(檢查沒過)──▶ attempted ──(檢查過了)──▶ passe
 
 ## B5. SQL 執行（T-015）
 
-- **引擎**：建議 sql.js（SQLite 編譯成 WebAssembly），由 T-015 決定。限制：不能需要特殊的 HTTP header（GitHub Pages 設不了）；WASM 檔的路徑要跟著網站的 `base`。
-- **在 Web Worker 裡執行**，單次上限 3 秒，超過就終止 Worker 並提示。
+- **引擎**：sql.js 1.15.1（SQLite 編譯成 WebAssembly），T-015a 已決定並實作（`src/components/exercises/sql/`，說明在那個資料夾的 README）。限制：不能需要特殊的 HTTP header（GitHub Pages 設不了）；WASM 檔的路徑要跟著網站的 `base`（已在 `/Gm-use/` 底下用 `astro build` 加 `astro preview` 驗證）。
+- **在 Web Worker 裡執行**，每次呼叫用一個新的 Worker。**3 秒從 SQL 引擎載入完成起算**：Worker 先載入 sql.js 和 WASM，載入完成就回報 `ready`，之後才開始算 `setup`、學習者的 SQL 和檢查；超過 3 秒就終止 Worker 並提示（`timeout`）。**引擎載入另有 20 秒上限**，超過算載入失敗（回 `error`，不是 `timeout`，因為不是學習者的 SQL 太慢）。不這樣分的話，連線慢的學習者會永遠跑不出 SQL：實測（2026-10-20，T-015a 審查）WASM 約 685 KB，下載速度低於約 1～2 Mbps 時，3 秒一到 Worker 就被終止、下載被中斷、也不會進快取，下一次又從頭來，連 `SELECT 1` 都一直逾時。
 - 每次「執行」和「檢查」都從乾淨的資料庫開始：先跑 `setup`，再跑學習者的 SQL。不保存資料庫（重新整理就重來）。
 - 學習者的 SQL 可以有多個語句：依序執行；顯示**最後一個會回傳資料列的語句**的結果（表格，最多 100 列）。
 - `rows`：拿上面那個結果和 `equals` 比；沒有任何語句回傳資料列就算沒通過。`state`：全部執行完之後，再執行 `query` 來比。比對規則見 3.3（預設不管順序，當成多重集合比）。
@@ -876,15 +880,15 @@ interface LessonContext {
 **`npm run check:content`**：靜態檢查，幾秒跑完，部署前在 CI 執行，失敗就不上線。
 
 1. 所有內容檔通過 `schemas.ts`，`contract` 等於 `CONTRACT_VERSION`；`id` 等於檔案路徑。
-2. `lessons/` 底下的課文，必填欄位都有；檔名是 `lesson-N.mdx` 而且 `N` 等於 `lesson`；`sidebar.order` 等於 `lesson`。
-3. `exercises`、`quiz` 指到的檔案都存在，並且和課文裡的 `<Exercise id>`、`<Quiz id>` 一一對應；課文裡每個 `<Diagram name>` 指到的 SVG 檔也要存在。
+2. `lessons/` 底下的課文，必填欄位都有（`draft: true` 的草稿只要有 `title`、`description`、`sidebar.order`、`draft`，有寫的欄位照常全部檢查，見 2.1）；檔名是 `lesson-N.mdx` 而且 `N` 等於 `lesson`（草稿沒寫 `lesson` 時，以檔名的 `N` 為準）；`sidebar.order` 等於 `N`；`title` 寫成「第 N 課｜課名」。缺少的必填欄位，同一個檔案合成一行報出來。
+3. `exercises`、`quiz` 指到的檔案都存在，並且和課文裡的 `<Exercise id>`、`<Quiz id>` 一一對應；課文裡每個 `<Diagram name>` 指到的 SVG 檔也要存在。反過來，沒被任何課文引用的練習或測驗檔也會報錯；但那一課的課文沒有寫出 `exercises`（或 `quiz`）、或 frontmatter 讀不出來時不報，因為根本原因已經報過了。課文自己有別的格式錯誤時，它在 frontmatter 裡寫的引用照樣算，不會連帶報「未被引用」。
 4. `draft: false` 的課，`gates` 三項都是 `true`。
-5. 圖解：能被 XML 解析、有 `viewBox`（寬 320～480）、有 `<title>`；沒有寫死的顏色（`style` 以外的 `fill`、`stroke` 不是 `none`／`url(#…)`；`style` 裡先去掉 `var(…)`，剩下的沒有 `#hex`、`rgb()`、顏色名稱）；沒有 `<script>`、`<style>`、`<foreignObject>`、`<image>`、`on…` 屬性、外部連結。
+5. 圖解：能被 XML 解析、有 `viewBox`（寬 320～480）、有 `<title>`；沒有寫死的顏色（`style` 以外的 `fill`、`stroke` 不是 `none`／`url(#…)`；`style` 裡先去掉 `var(…)`，剩下的沒有 `#hex`、`rgb()`、顏色名稱）；沒有 `<script>`、`<style>`、`<foreignObject>`、`<image>`、動畫元素（`<animate>`、`<animateColor>`、`<animateMotion>`、`<animateTransform>`、`<set>`、`<discard>`）、`on…` 屬性、外部連結；每個 `<text>`、`<tspan>` 的 `font-size`（可以繼承）寫成數字而且至少 14；同一課所有圖解的 `id` 不重複（同一張圖裡不重複，也不和同一課的另一張圖重複）。文字有沒有擠到邊、箭頭旁邊的說明會不會太長，檢查器量不到，由審稿人在瀏覽器裡看（第 5 節）。
 6. 測驗：每題剛好一個正確答案（schema 已檢查）。
 
-**`npm run test:exercises`**：要開瀏覽器跑練習，merge 前在本機執行。
+**`npm run test:exercises`**：merge 前在本機執行。preview 練習要開瀏覽器；**SQL 練習不用瀏覽器**，在 Node 裡跑（T-009c）。
 
-- **練習自我測試**：用真正的檢查執行器跑每個練習；標準答案要通過全部檢查，起始內容要至少一條沒通過。preview、api 要在真的瀏覽器裡跑（用 Playwright，因為 `style` 檢查要靠瀏覽器算出實際樣式）：本機用 `channel: 'msedge'`（Windows 內建的 Edge，不用另外下載瀏覽器），GitHub Actions 的 ubuntu 用 `channel: 'chrome'`（Claude-A 的建議，實作時再確認）。sql 在 Node 裡用 sql.js 就能跑。
+- **練習自我測試**：用真正的檢查執行器跑每個練習；標準答案要通過全部檢查，起始內容要至少一條沒通過。preview 要在真的瀏覽器裡跑（用 Playwright，因為 `style` 檢查要靠瀏覽器算出實際樣式）：本機用 `channel: 'msedge'`（Windows 內建的 Edge，不用另外下載瀏覽器），GitHub Actions 的 ubuntu 用 `channel: 'chrome'`（Claude-A 的建議，實作時再確認）。api 還不支援（等 T-014），印「略過」，不算通過。**sql 不用瀏覽器**：用 T-015a 的執行核心（`src/components/exercises/sql/run.node.mjs`，Node 的 worker 裡跑 sql.js，比對規則和畫面一樣）；起始內容是 `starter`，標準答案是 `solution`。
 
 **`npm run test:schemas`**（已經有了）：跑 `src/lib/schemas.test.ts`。約定文件裡的範例都要通過 schema，故意寫錯的版本都要被擋下。改約定文件或 `schemas.ts` 之後，要先跑它。
 
@@ -924,3 +928,4 @@ interface LessonContext {
 | 1.0 草稿 | 2026-10-18 | 第一版：課程檔、練習（preview、api、sql）、測驗、圖解、進度與事件、建置檢查 |
 | 1.1 | 2026-10-19 | 照 T-009 的實測補充，都是補充或釐清，內容檔不用改：沙箱安全規則在 Chromium 的驗證結果、逾時的處理（逾時也算沒通過；沒有 steps 的 case 逾時，後面的 case 直接失敗）、`attr` 的空白處理和 `present: false`、進度儲存多了 `failedAttempts`、`revealShown`、`lastFailedCheck` 和 `getExercise`、`getContext()` 的細節 |
 | 1.1.1 | 2026-10-20 | T-009 收尾，都是實作備忘（第二部分）的補充，內容檔不用改：迴圈保護（同一頁的沙箱 iframe 共用一個瀏覽器程序，一個卡住整頁都壞掉，所以要在執行前中止無窮迴圈）、預覽每次更新換新的 iframe 和看門狗（ping）、結果驗證、探針用完拿掉、style 檢查不要用百分比、<Diagram> 的無障礙屬性放在內層、已知限制 |
+| 1.2 | 2026-10-20 | T-019b，除了「草稿課文可以少寫欄位」以外都是補充或釐清，內容檔不用改：草稿課文（`draft: true`）只要有 `title`、`description`、`sidebar.order`、`draft`，有寫的欄位照常檢查（2.1、B9）；圖解禁用動畫元素、`font-size` 的寫法、同一課所有圖解的 `id` 不能重複、文字不要擠到邊（作者和審稿人自己量，檢查器不量）（第 5 節）；YAML 的引號：含 ASCII 雙引號的文字整段改用單引號（7.2）；SQL 的 3 秒從引擎載入完成起算、載入另有 20 秒上限（B5）；`test:exercises` 的 SQL 練習不用瀏覽器（B9）；`check:content` 的訊息：缺少的必填欄位合成一行、課文有別的錯誤時不再連帶報練習和測驗「未被引用」（B9） |
