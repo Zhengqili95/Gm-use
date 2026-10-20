@@ -25,17 +25,19 @@ test('故意寫錯的練習都抓得到，無窮迴圈也不會卡住整個測�
 	const lines = result.stdout.trim().split(/\r?\n/);
 	const expected = [
 		/^✗ lesson-1\/ex-1 {2}標準答案沒過：card-background$/,
-		/^✗ lesson-1\/ex-2 {2}標準答案沒過：after-click（執行逾時）$/,
-		/^✓ lesson-1\/ex-3 {2}標準答案全過；起始內容沒過：title-text（起始內容執行逾時）$/,
+		/^✗ lesson-1\/ex-2 {2}標準答案沒過：after-click（程式錯誤：.*迴圈跑太久了.*）$/,
+		/^✓ lesson-1\/ex-3 {2}標準答案全過；起始內容沒過：title-text$/,
 		/^✗ lesson-1\/ex-4 {2}起始內容就通過全部檢查/,
 		/^✗ lesson-1\/ex-5 {2}格式不對：沒有 solution/,
 		/^✗ lesson-1\/ex-6 {2}YAML 讀不懂：/,
 		/^✗ lesson-1\/ex-7 {2}標準答案執行時出錯：.*documnet/,
+		/^✗ lesson-1\/ex-8 {2}標準答案沒過：after-click（執行逾時）$/,
+		/^✓ lesson-1\/ex-9 {2}標準答案全過；起始內容沒過：title-text（起始內容執行逾時）$/,
 		/^－ lesson-2\/ex-1 {2}略過：api/,
 		/^－ lesson-3\/ex-1 {2}略過：sql/,
 		/^✓ lesson-10\/ex-1 {2}標準答案全過；起始內容沒過：msg-text$/,
 		/^$/,
-		/^通過 2 個、沒過 6 個、略過 2 個（略過的不算通過）$/,
+		/^通過 3 個、沒過 7 個、略過 2 個（略過的不算通過）$/,
 	];
 	assert.equal(lines.length, expected.length, result.stdout);
 	expected.forEach((pattern, index) => assert.match(lines[index], pattern));
