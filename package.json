@@ -13,7 +13,8 @@
     "check": "astro check",
     "check:content": "node src/lib/check-content/cli.mjs",
     "test:check": "node --test src/lib/check-content/check-content.test.mjs",
-    "test:exercises": "node tools/exercise-tests/run.mjs"
+    "test:exercises": "node tools/exercise-tests/run.mjs",
+    "test:sql": "node --test src/components/exercises/sql/*.test.mjs"
   },
   "dependencies": {
     "@astrojs/preact": "^6.1.0",
@@ -21,7 +22,8 @@
     "acorn": "^8.19.0",
     "astro": "^7.2.10",
     "preact": "^11.0.1",
-    "sharp": "^0.35.3"
+    "sharp": "^0.35.3",
+    "sql.js": "^1.15.1"
   },
   "private": true,
   "engines": {
