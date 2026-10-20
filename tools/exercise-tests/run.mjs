@@ -14,8 +14,11 @@ function parseArgs(argv) {
 	const filters = [];
 	let dir = join(repoRoot, 'src', 'lessons');
 	for (let i = 0; i < argv.length; i += 1) {
-		if (argv[i] === '--dir') dir = resolve(argv[++i] ?? '');
-		else filters.push(argv[i]);
+		if (argv[i] === '--dir') {
+			const value = argv[++i];
+			if (!value || value.startsWith('--')) throw new Error('--dir 後面要給練習資料夾的路徑。');
+			dir = resolve(value);
+		} else filters.push(argv[i]);
 	}
 	return { dir, filters };
 }

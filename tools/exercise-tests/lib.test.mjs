@@ -97,6 +97,11 @@ describe('判斷結果', () => {
 		assert.equal(verdict.ok, false);
 		assert.equal(verdict.text, '標準答案沒過：b（執行逾時）（程式錯誤：x is not defined）');
 	});
+	it('標準答案檢查都過了，但執行時出錯，也算有問題；起始內容出錯不用管', () => {
+		const verdict = judge(checks, outcome({ a: false, b: false }, { errors: ['起始內容的錯誤'] }), outcome({ a: true, b: true }, { errors: ['oops is not defined'] }));
+		assert.deepEqual(verdict, { ok: false, text: '標準答案執行時出錯：oops is not defined' });
+		assert.equal(judge(checks, outcome({ a: false, b: true }, { errors: ['起始內容的錯誤'] }), outcome({ a: true, b: true })).ok, true);
+	});
 	it('沒有結果的檢查算沒過（和畫面一樣）', () => {
 		assert.equal(judge(checks, outcome({}), outcome({ a: true })).text, '標準答案沒過：b');
 	});
