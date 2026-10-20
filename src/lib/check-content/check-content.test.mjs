@@ -7,6 +7,7 @@ import { spawnSync } from 'node:child_process';
 import { test } from 'node:test';
 import { parse, stringify } from 'yaml';
 import { checkContent } from './index.mjs';
+import { analyzeSvg, checkSvg } from './svg.mjs';
 
 const contract = readFileSync(new URL('../../../docs/CONTRACT.md', import.meta.url), 'utf8');
 const example = (id) => {
@@ -99,6 +100,118 @@ test('SVG 內部 url、透明填色及繼承字體通過', async (t) => {
   assert.deepEqual(await checkContent(f.root), []);
 });
 
+// ---- 約定 1.2：草稿課文只要四個欄位 ----
+const draftFront = (v) => {
+  for (const key of Object.keys(v)) if (!['title', 'description', 'sidebar', 'draft'].includes(key)) delete v[key];
+  v.draft = true;
+};
+const placeholderBody = '\n這一課還在準備中。\n';
+test('草稿只要有 title、description、sidebar.order、draft', async (t) => {
+  const f = fixture(t);
+  f.front(draftFront, placeholderBody);
+  assert.deepEqual(await checkContent(f.root), []);
+});
+for (const field of ['title', 'description', 'sidebar', 'draft']) {
+  test('草稿缺少 ' + field + ' 仍然報錯', async (t) => {
+    const f = fixture(t);
+    f.front((v) => { draftFront(v); delete v[field]; }, placeholderBody);
+    const errors = await checkContent(f.root);
+    assert.ok(errors.some(e => e.file.includes(lessonFile) && /必填/.test(e.reason) && new RegExp(field).test(e.reason)), JSON.stringify(errors));
+  });
+}
+const draftChecked = [
+  ['minutes 超出範圍', (v) => { v.minutes = 99; }, /minutes/],
+  ['sources 不是 https', (v) => { v.sources = [{ title: 'a', url: 'http://example.org' }, { title: 'b', url: 'https://example.org' }]; }, /sources/],
+  ['gates 少一項', (v) => { v.gates = { sources: true, review: true }; }, /gates/],
+  ['exercises 指到不存在的檔案', (v) => { v.exercises = ['lesson-1/ex-9']; }, /不存在/],
+  ['exercises 跨課', (v) => { v.exercises = ['lesson-2/ex-1']; }, /同一課/],
+  ['lesson 和檔名不同', (v) => { v.lesson = 2; }, /lesson|課號/],
+];
+for (const [name, edit, reason] of draftChecked) {
+  test('草稿有寫的欄位照常檢查：' + name, async (t) => {
+    const f = fixture(t);
+    f.front((v) => { draftFront(v); edit(v); }, placeholderBody);
+    const errors = await checkContent(f.root);
+    assert.ok(errors.some(e => e.file.includes(lessonFile) && reason.test(e.reason)), JSON.stringify(errors));
+  });
+}
+test('草稿沒寫 lesson 時，用檔名的課號檢查 title 和 sidebar.order', async (t) => {
+  const f = fixture(t);
+  f.front((v) => { draftFront(v); v.sidebar.order = 9; v.title = '第 5 課｜錯的'; }, placeholderBody);
+  const errors = await checkContent(f.root);
+  assert.ok(errors.some(e => /sidebar.order/.test(e.reason)), JSON.stringify(errors));
+  assert.ok(errors.some(e => /title/.test(e.reason)), JSON.stringify(errors));
+});
+test('草稿的檔名也要是 lesson-N.mdx，課號不補零', async (t) => {
+  const f = fixture(t);
+  f.front(draftFront, placeholderBody);
+  f.move(lessonFile, lessonFile.replace('lesson-1', 'lesson-01'));
+  const errors = await checkContent(f.root);
+  assert.ok(errors.some(e => e.file.includes('lesson-01') && /檔名/.test(e.reason)), JSON.stringify(errors));
+});
+test('草稿的課文放了 Exercise 或 Quiz，frontmatter 就要有 exercises、quiz', async (t) => {
+  const f = fixture(t);
+  f.front(draftFront, placeholderBody + '\n<Exercise id="lesson-1/ex-1" />\n\n<Quiz id="lesson-1/quiz" />\n');
+  const errors = await checkContent(f.root);
+  assert.ok(errors.some(e => /放了 <Exercise>/.test(e.reason)), JSON.stringify(errors));
+  assert.ok(errors.some(e => /放了 <Quiz>/.test(e.reason)), JSON.stringify(errors));
+});
+test('草稿以外的課文沒有放寬：只有四個欄位時缺少的欄位合成一行', async (t) => {
+  const f = fixture(t);
+  f.front((v) => { draftFront(v); v.draft = false; }, placeholderBody);
+  const errors = await checkContent(f.root);
+  assert.equal(errors.length, 1, JSON.stringify(errors));
+  assert.match(errors[0].reason, /^缺少必填欄位：contract、lesson、minutes、oneThing、result、sources、exercises、quiz、gates$/);
+});
+
+// ---- 約定 1.2：錯誤訊息不要連帶、不要一個欄位一行 ----
+test('缺少的必填欄位合成一行', async (t) => {
+  const f = fixture(t);
+  f.front((v) => { delete v.minutes; delete v.oneThing; delete v.result; });
+  assert.deepEqual((await checkContent(f.root)).map(e => e.reason), ['缺少必填欄位：minutes、oneThing、result']);
+});
+test('練習缺少好幾個欄位時也合成一行', async (t) => {
+  const f = fixture(t);
+  f.data(exerciseFile, (v) => { delete v.title; delete v.goal; });
+  const errors = (await checkContent(f.root)).filter(e => e.file.includes(exerciseFile));
+  assert.deepEqual(errors.map(e => e.reason), ['缺少必填欄位：title、goal']);
+});
+test('課文自己格式錯誤時，它的練習和測驗不會連帶被報成「未被引用」', async (t) => {
+  const f = fixture(t);
+  f.front((v) => { v.minutes = 99; });
+  const errors = await checkContent(f.root);
+  assert.ok(errors.some(e => /minutes/.test(e.reason)), JSON.stringify(errors));
+  assert.ok(!errors.some(e => /未.*引用/.test(e.reason)), JSON.stringify(errors));
+});
+test('課文的 frontmatter 讀不出來時，也不連帶報練習和測驗沒被引用', async (t) => {
+  const f = fixture(t); f.put(lessonFile, '# 沒有設定');
+  const errors = await checkContent(f.root);
+  assert.ok(errors.some(e => /frontmatter/.test(e.reason)), JSON.stringify(errors));
+  assert.ok(!errors.some(e => /未.*引用/.test(e.reason)), JSON.stringify(errors));
+});
+test('課文沒寫 exercises、quiz 時，已有的練習和測驗檔只報缺欄位，不連帶報沒被引用', async (t) => {
+  const f = fixture(t);
+  f.front((v) => { delete v.exercises; delete v.quiz; }, placeholderBody);
+  assert.deepEqual((await checkContent(f.root)).map(e => e.reason), ['缺少必填欄位：exercises、quiz']);
+});
+test('analyzeSvg 回傳圖裡的 id，checkSvg 只回傳錯誤', () => {
+  assert.deepEqual(analyzeSvg(svg), { errors: [], ids: ['bs-arrow'] });
+  assert.deepEqual(checkSvg(svg), []);
+  assert.deepEqual(analyzeSvg('<svg>').ids, []);
+});
+test('同一課兩張圖用同一個 id 會報錯，不同課的圖可以', async (t) => {
+  const f = fixture(t);
+  const other = 'src/lessons/lesson-1/diagrams/other-diagram.svg';
+  f.put(other, svg);
+  let errors = await checkContent(f.root);
+  assert.ok(errors.some(e => e.file.includes('other-diagram.svg') && /同一課.*bs-arrow.*browser-server\.svg/.test(e.reason)), JSON.stringify(errors));
+  assert.ok(!errors.some(e => e.file.includes('/browser-server.svg')), '先出現的那張不該被報錯：' + JSON.stringify(errors));
+  f.remove(other);
+  f.put('src/lessons/lesson-2/diagrams/other-diagram.svg', svg);
+  errors = await checkContent(f.root);
+  assert.deepEqual(errors, []);
+});
+
 const invalid = [
   ['練習版本', f => f.data(exerciseFile, v => { v.contract = 99; }), exerciseFile, /contract/],
   ['練習 id 對應路徑', f => f.data(exerciseFile, v => { v.id = 'lesson-2/ex-1'; }), exerciseFile, /id/],
@@ -170,6 +283,11 @@ const invalid = [
 for (const field of ['title', 'description', 'sidebar', 'contract', 'lesson', 'minutes', 'oneThing', 'result', 'sources', 'exercises', 'quiz', 'gates', 'draft']) {
   invalid.push(['缺少 ' + field, f => f.front(v => { delete v[field]; }), lessonFile, new RegExp(field)]);
 }
+// 約定 1.2：圖解是靜態的，不可以有動畫元素；font-size 要能以 viewBox 單位判定
+for (const element of ['animate', 'animateColor', 'animateMotion', 'animateTransform', 'set', 'discard']) {
+  invalid.push(['SVG 動畫元素 ' + element, f => f.put(svgFile, svg.replace('</svg>', '<' + element + '/></svg>')), svgFile, new RegExp('動畫元素 <' + element + '>')]);
+}
+invalid.push(['SVG font-size 用 em', f => f.put(svgFile, svg.replace('font-size="16"', 'font-size="1.2em"')), svgFile, /font-size/]);
 for (const [name, edit, file, reason] of invalid) {
   test(name, async (t) => {
     const f = fixture(t); edit(f);
