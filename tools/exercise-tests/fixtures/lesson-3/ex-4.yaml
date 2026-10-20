@@ -1,0 +1,30 @@
+# 預期：✗ 標準答案沒過：only-favorites（執行逾時）——跑不完的遞迴查詢不能卡住整個測試
+contract: 1
+id: lesson-3/ex-4
+type: sql
+title: "標準答案跑不完"
+goal: "只列出已收藏的卡片標題"
+minutes: 3
+setup: |
+  CREATE TABLE prompts (
+    id INTEGER PRIMARY KEY,
+    title TEXT NOT NULL,
+    favorite INTEGER NOT NULL DEFAULT 0
+  );
+  INSERT INTO prompts (title, favorite) VALUES
+    ('寫一封請假信', 0),
+    ('解釋程式錯誤', 1),
+    ('整理上課筆記', 0);
+starter: |
+  SELECT title FROM prompts;
+solution: |
+  WITH RECURSIVE n(x) AS (VALUES(1) UNION ALL SELECT x + 1 FROM n) SELECT title FROM prompts, n WHERE favorite = 1;
+checks:
+  - id: only-favorites
+    type: rows
+    columns: [title]
+    equals:
+      - ["解釋程式錯誤"]
+    hint: "加上條件，只留下 favorite 等於 1 的。"
+hints: ["一", "二", "三"]
+success: "好"
