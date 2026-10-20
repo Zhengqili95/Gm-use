@@ -1,0 +1,18 @@
+---
+// 課文裡的 <Quiz id="lesson-1/quiz" />：依 id 取測驗資料，交給互動元件（docs/CONTRACT.md B6）。
+import { getEntry } from 'astro:content';
+import QuizApp from './QuizApp.tsx';
+import './quiz.css';
+
+interface Props {
+	id: string;
+}
+
+const { id } = Astro.props;
+const entry = await getEntry('quizzes', id);
+if (!entry) {
+	throw new Error(`找不到測驗「${id}」：請確認 src/lessons/${id}.yaml 存在，而且課文裡的 id 寫對了。`);
+}
+---
+
+<QuizApp client:visible quiz={entry.data} />

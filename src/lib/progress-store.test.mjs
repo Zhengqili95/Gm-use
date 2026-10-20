@@ -149,3 +149,112 @@ describe('進度儲存', () => {
     assert.equal(JSON.parse(globalThis.localStorage.getItem(store.STORAGE_KEY)).lessons['lesson-1'], undefined);
   });
 });
+
+describe('測驗：選項位置（picked）和讀取', () => {
+  it('picked 用選項在檔案裡的原始位置記錄，重新載入之後還在', () => {
+    store.updateQuiz('lesson-1', 'q1', { tries: 2, picked: [2, 0], done: true });
+    store.__resetCacheForTests();
+    assert.deepEqual(store.readQuizAnswers(store.getProgress(), 'lesson-1').q1, { firstTryCorrect: false, tries: 2, done: true, picked: [2, 0] });
+  });
+
+  it('沒有紀錄的課或題目：傳回空的，不丟例外', () => {
+    assert.deepEqual(store.readQuizAnswers(store.getProgress(), 'lesson-9'), {});
+    store.updateExercise('lesson-1/ex-1', { status: 'passed' }); // 只有練習、沒有 quiz
+    assert.deepEqual(store.readQuizAnswers(store.getProgress(), 'lesson-1'), {});
+  });
+
+  it('讀取時檢查每一筆：格式不對的整筆丟掉，欄位壞掉的用預設值，picked 只留不重複的非負整數', () => {
+    globalThis.localStorage.setItem(
+      store.STORAGE_KEY,
+      JSON.stringify({
+        schema: 1,
+        lessons: {
+          'lesson-1': {
+            exercises: {},
+            quiz: {
+              answers: {
+                q1: { firstTryCorrect: 'yes', tries: -3, done: 1, picked: [0, 0, 1.5, -1, '2', null, 3] },
+                q2: 'oops',
+                q3: null,
+                q4: { firstTryCorrect: true, tries: 1, done: true, picked: 'x' },
+              },
+            },
+          },
+        },
+      }),
+    );
+    store.__resetCacheForTests();
+    assert.deepEqual(store.readQuizAnswers(store.getProgress(), 'lesson-1'), {
+      q1: { firstTryCorrect: false, tries: 0, done: false, picked: [0, 3] },
+      q4: { firstTryCorrect: true, tries: 1, done: true },
+    });
+  });
+});
+
+describe('一課完成的判斷', () => {
+  const spec = { exercises: ['lesson-1/ex-1', 'lesson-1/ex-2'], questions: ['q1', 'q2'] };
+  const finishExercises = (status2 = 'passed') => {
+    store.updateExercise('lesson-1/ex-1', { status: 'passed' });
+    store.updateExercise('lesson-1/ex-2', { status: status2 });
+  };
+  const finishQuiz = () => {
+    store.updateQuiz('lesson-1', 'q1', { firstTryCorrect: true, tries: 1, done: true });
+    store.updateQuiz('lesson-1', 'q2', { firstTryCorrect: false, tries: 2, done: true });
+  };
+
+  it('練習只有 passed 和 revealed 算完成', () => {
+    assert.equal(store.isExerciseDone(undefined), false);
+    for (const status of ['todo', 'attempted']) assert.equal(store.isExerciseDone({ status }), false, status);
+    for (const status of ['passed', 'revealed']) assert.equal(store.isExerciseDone({ status }), true, status);
+    assert.equal(store.isExerciseDone({ status: '亂寫的' }), false);
+  });
+
+  it('練習和測驗都做完：這一課完成（看過答案之後過關也算）', () => {
+    finishExercises('revealed');
+    finishQuiz();
+    assert.equal(store.isLessonDone(store.getProgress(), 'lesson-1', spec), true);
+  });
+
+  it('還有一個練習沒完成：不算', () => {
+    store.updateExercise('lesson-1/ex-1', { status: 'passed' });
+    store.updateExercise('lesson-1/ex-2', { status: 'attempted' });
+    finishQuiz();
+    assert.equal(store.isLessonDone(store.getProgress(), 'lesson-1', spec), false);
+  });
+
+  it('還有一個練習根本沒碰過（沒有那一筆）：不算', () => {
+    store.updateExercise('lesson-1/ex-1', { status: 'passed' });
+    finishQuiz();
+    assert.equal(store.isLessonDone(store.getProgress(), 'lesson-1', spec), false);
+  });
+
+  it('測驗還有一題沒答對，或根本沒做：不算', () => {
+    finishExercises();
+    assert.equal(store.isLessonDone(store.getProgress(), 'lesson-1', spec), false, '沒做測驗');
+    store.updateQuiz('lesson-1', 'q1', { firstTryCorrect: true, tries: 1, done: true });
+    store.updateQuiz('lesson-1', 'q2', { tries: 1 });
+    assert.equal(store.isLessonDone(store.getProgress(), 'lesson-1', spec), false, 'q2 還沒答對');
+  });
+
+  it('別的課的進度不會算進來', () => {
+    finishExercises();
+    finishQuiz();
+    assert.equal(store.isLessonDone(store.getProgress(), 'lesson-2', { exercises: ['lesson-2/ex-1'], questions: ['q1'] }), false);
+  });
+
+  it('沒有練習或沒有測驗題目的課（佔位頁）永遠不算完成，不會因為「每一個都完成」在空清單上成立', () => {
+    finishExercises();
+    finishQuiz();
+    const state = store.getProgress();
+    assert.equal(store.isLessonDone(state, 'lesson-1', { exercises: [], questions: ['q1'] }), false);
+    assert.equal(store.isLessonDone(state, 'lesson-1', { exercises: ['lesson-1/ex-1'], questions: [] }), false);
+    assert.equal(store.isLessonDone(store.emptyState(), 'lesson-2', { exercises: [], questions: [] }), false);
+  });
+
+  it('課文後來多了一題：已經完成的課會變回沒完成（完成是算出來的，不是存起來的旗標）', () => {
+    finishExercises();
+    finishQuiz();
+    assert.equal(store.isLessonDone(store.getProgress(), 'lesson-1', spec), true);
+    assert.equal(store.isLessonDone(store.getProgress(), 'lesson-1', { ...spec, questions: ['q1', 'q2', 'q3'] }), false);
+  });
+});

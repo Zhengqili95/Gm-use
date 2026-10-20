@@ -1,0 +1,42 @@
+contract: 1
+id: lesson-1/ex-1
+type: preview
+title: "幫卡片補上收藏按鈕"
+goal: "在卡片最下面補上一顆 id 為 fav、寫著「☆ 收藏」的按鈕"
+minutes: 2
+files:
+  index.html: |
+    <article class="card">
+      <h2 id="title">寫一封請假信</h2>
+      <p id="body">請幫我寫一封給老師的請假信，語氣有禮貌，100 字以內。</p>
+      <p class="meta"><span id="tag">寫作</span></p>
+      <!-- 在這裡補上收藏按鈕 -->
+    </article>
+editable: [index.html]
+solution:
+  index.html: |
+    <article class="card">
+      <h2 id="title">寫一封請假信</h2>
+      <p id="body">請幫我寫一封給老師的請假信，語氣有禮貌，100 字以內。</p>
+      <p class="meta"><span id="tag">寫作</span></p>
+      <button id="fav" type="button">☆ 收藏</button>
+    </article>
+checks:
+  - id: fav-exists
+    type: exists
+    selector: "#fav"
+    hint: '畫面上還找不到 id 是 fav 的元素；檢查按鈕的開頭標籤裡有沒有寫 id="fav"。'
+  - id: fav-in-article
+    type: exists
+    selector: "article button#fav"
+    hint: "請確認你使用的是 button 標籤，而且放在 article 的開頭與結尾標籤中間。"
+  - id: fav-text
+    type: text
+    selector: "#fav"
+    includes: "收藏"
+    hint: "按鈕出現了，但裡面的文字沒有包含「收藏」；檢查開頭標籤和結尾標籤中間的文字。"
+hints:
+  - "HTML 用成對的開頭標籤與結尾標籤把按鈕文字包起來，並在開頭標籤裡用 id 幫元素取名字。"
+  - "看 index.html 的倒數第二行（在 </article> 結尾標籤的上方），把按鈕寫在那裡。"
+  - '<button id="send" type="button">送出</button> 會做出一顆名叫 send、顯示「送出」的按鈕。'
+success: "按鈕加上去了！你剛剛用 HTML 的標籤與 id，在卡片裡多放了一個元素。"

@@ -1,7 +1,7 @@
 # vibe-learn 資料格式約定（CONTRACT）
 
 > **狀態**：草稿（T-005，Claude-B 起草，等 Claude-A 審）。
-> **版本**：約定 1.2；內容檔的 `contract` 欄位寫 `1`（主版本）。
+> **版本**：約定 1.2.1；內容檔的 `contract` 欄位寫 `1`（主版本）。
 > **依據**：`docs/SPEC.md`、D-011、D-012（課程順序、提示三層、批改看結果、三課共用「AI 提示詞收藏卡」、練習改一小段、圖解用 SVG）。
 > **可執行版本**：格式的細節以 `src/lib/schemas.ts`（zod schema）為準。文件和它不一致時，以 schemas.ts 為準，並在討論區回報，請 Claude-B 修文件。
 
@@ -805,10 +805,13 @@ todo ──(檢查沒過)──▶ attempted ──(檢查過了)──▶ passe
 
 ## B6. 測驗元件（T-010）
 
-- 全部題目一次列在頁面上；點選項就立刻看到那個選項的 `explain`。答錯可以再選別的選項。
-- **計分**：第一次點就點對才得 1 分；顯示「第一次就答對 X／N 題」。
-- 選項順序在載入時打亂；進度裡用「選項在檔案裡的原始位置」記錄，所以重新整理或打亂都不影響。
+- 全部題目一次列在頁面上；點選項就立刻看到那個選項的 `explain`（顯示在那個選項的下面，選項上有 ✓ 或 ✗，不只靠顏色）。答錯可以再選別的選項；點過的選項的說明都留在畫面上。
+- **計分**：第一次點就點對才得 1 分；顯示「第一次就答對 X／N 題」。答對之後再點別的選項只是看說明，不改計分；重複點同一個選項不另外算一次嘗試。
+- 選項順序在載入時打亂；進度裡用「選項在檔案裡的原始位置」記錄（`picked`），所以重新整理或打亂都不影響。
 - 每一題最後都答對，這份測驗就算完成。
+- 元件：`Quiz.astro`（取資料，`client:visible`）＋ `QuizApp.tsx`（畫面）＋ `quiz-logic.ts`（答題規則和計分，可以直接用 Node 測）。伺服器端渲染的網頁只有題目，選項要等元件水合之後才出現（打亂和讀進度都在水合之後），這樣第一次畫出來的樣子和伺服器端一樣。
+- 手機：全部用 grid 排版的清單，欄位寫成 `minmax(0, 1fr)`，不然測驗裡一行很長的程式碼會把欄位撐寬、頁面橫向捲動（實測過）。
+- 已知限制：答案和說明在 island 的 props 裡（和練習的標準答案一樣），不是防作弊設計；沒有「重做測驗」的按鈕，試讀時再決定要不要加。細節見 `src/components/quiz/README.md`。
 
 ## B7. 進度儲存與事件（T-009、T-010）
 
@@ -828,8 +831,14 @@ interface ExerciseProgress {
   lastFailedCheck?: { id: string; hint: string };
   updatedAt: string;             // ISO 時間
 }
+interface QuizAnswer {
+  firstTryCorrect: boolean;      // 第一次點就點對（只有這種才得分）
+  tries: number;                 // 答對之前點過幾個不同的選項（含答對的那一次）
+  done: boolean;                 // 這一題已經答對
+  picked?: number[];             // 點過的選項，依先後，用「選項在檔案裡的原始位置」記錄（B6）
+}
 interface QuizProgress {
-  answers: Record<string, { firstTryCorrect: boolean; tries: number; done: boolean }>;
+  answers: Record<string, QuizAnswer>;
 }
 interface ProgressState {
   schema: 1;
@@ -838,9 +847,9 @@ interface ProgressState {
 ```
 
 - 只存學習者碰過的練習（編輯、檢查、看提示、看答案、重設），沒碰過的不留一筆空資料。
-- **API**：`getProgress()`、`getExercise(id)`、`updateExercise(id, patch)`、`updateQuiz(lessonId, questionId, patch)`、`subscribe(listener)`（回傳取消訂閱的函式）、`reset()`。有改動時，也在 `window` 上送出 `CustomEvent('vibe:progress', { detail: state })`；用 `storage` 事件讓不同分頁同步。
-- **一課完成**：課文 frontmatter `exercises` 裡每個練習都是 `passed` 或 `revealed`，而且測驗每題都 `done`。整體進度 = 已完成的課數 ÷ 正式上線的課數。
-- **側邊欄「學習進度」**：版面和接口由 Claude-A 的外殼決定（`src/components/layout/README.md`：更新 `[data-vl-progress-count]`、`[data-vl-progress-fill]`，完成的課程連結加 `data-vl-done="true"`）。側邊欄在每個課程頁都有，所以更新程式要在每一頁執行，不能只放在有練習的頁面：由進度元件的 `src/components/progress/sidebar-progress.ts` 負責，`Sidebar.astro` 只要有一行 `<script>import '../progress/sidebar-progress';</script>`。它從 `nav.sidebar a` 的網址（`/lessons/lesson-N/`）取出 `N` 對應到 `lesson-N`；總課數用 `[data-vl-progress]` 的 `data-vl-total`。
+- **API**：`getProgress()`、`getExercise(id)`、`updateExercise(id, patch)`、`updateQuiz(lessonId, questionId, patch)`、`subscribe(listener)`（回傳取消訂閱的函式）、`reset()`。有改動時，也在 `window` 上送出 `CustomEvent('vibe:progress', { detail: state })`；用 `storage` 事件讓不同分頁同步。另外有讀取和判斷用的 `readQuizAnswers(state, lessonId)`（每一筆都檢查過格式，壞掉的丟掉）、`isExerciseDone(progress)`、`isLessonDone(state, lessonId, { exercises, questions })`。
+- **一課完成**：課文 frontmatter `exercises` 裡每個練習都是 `passed` 或 `revealed`，而且測驗每題都 `done`（`isLessonDone`）。沒有練習或沒有測驗題目的課（佔位頁）不算完成。完成是從目前的課文和進度算出來的，不是存起來的旗標：課文後來多了一題，完成的課會變回沒完成。整體進度 = 已完成的課數 ÷ 正式上線的課數。
+- **側邊欄「學習進度」**：版面和接口由 Claude-A 的外殼決定（`src/components/layout/README.md`：更新 `[data-vl-progress-count]`、`[data-vl-progress-fill]`，完成的課程連結加 `data-vl-done="true"`）。側邊欄在每個課程頁都有，所以更新程式要在每一頁執行，不能只放在有練習的頁面：由進度元件的 `src/components/progress/sidebar-progress.ts` 負責。它要知道每一課有哪些練習、測驗有哪幾題，所以**每個課程頁的課文都要放一次 `<SidebarProgress />`**（`SidebarProgress.astro`）：它在建置時把這份清單寫進頁面（`#vl-lesson-manifest`），再載入 `sidebar-progress.ts`。程式從 `nav.sidebar a` 的網址（`/lessons/lesson-N/`）取出 `N` 對應到 `lesson-N`；總課數用 `[data-vl-progress]` 的 `data-vl-total`；進度有改動時用 `vibe:progress` 事件帶來的最新進度重畫（所以練習和側邊欄就算不是同一份模組實體也不會讀到舊的）。**課文漏放的話，那一頁的側邊欄不會更新**（`src/components/progress/README.md`）。原本約定寫的是「`Sidebar.astro` 放一行 import」，但那樣拿不到每一課的清單；如果要改成放在 `Sidebar.astro`（每一頁都有，課文不用放），那個檔案是外殼的，由 Claude-A 決定。
 - 第 2、3 課還沒做好時，檔案維持 `draft: true`：正式網站的側邊欄不會出現，`data-vl-total` 也只算已上線的課；首頁用卡片預告。
 
 ## B8. 問 AI 的對外介面（T-013 會用）
@@ -868,6 +877,7 @@ interface LessonContext {
 - `activeExerciseId` 讓 AI 知道學習者現在問的是哪一題；`hintsShown` 讓 AI 的提示可以從下一層開始，不重複學習者已經看過的（Claude-A 在 M-031 的建議）。
 
 - `text` 取自課文區（`.sl-markdown-content`）的文字，段落、標題、清單、程式碼區塊之間會換行；排除有 `data-no-context` 屬性的元素（整個練習區、標準答案），也排除 `script`、`style`、`svg`、`iframe`、`textarea`、`button`、螢幕閱讀器專用的 `sr-only` 和標題旁的錨點連結。標準答案、還沒展開的提示、測驗的正確答案，在學習者主動展開之前根本不放進 DOM；已展開的部分，由 T-013 決定要不要給 AI（預設不給）。
+- 測驗：題目和程式碼會進 `text`；選項是 `<button>`（不進文字）；選項說明、分數標了 `data-no-context`；點了選項之後給螢幕閱讀器念的 `sr-only` 文字也不進。伺服器端渲染的網頁只有題目，沒有選項和答案（T-010 用 `getContext().text` 驗證過）。
 - `exercises` 只含已經載入的練習（練習用 `client:visible`，捲到才載入），而且是即時的（練習元件載入後登記自己，學習者剛打的字也看得到，不用等存檔）。
 - `lessonId` 從網址 `/lessons/lesson-N/` 取；不在課程頁時（例如開發用的 `/dev/lab/`），改用第一個練習 id 的前綴。
 - 除了 `window.vibeLearn.getContext()`，也可以直接 `import { getContext } from '../../lib/learn-context'`，是同一份。
@@ -900,6 +910,7 @@ interface LessonContext {
 - 每課頁面的 JavaScript（不含 sql.js 和 WASM）目標 100 KB 以內（壓縮後）；sql.js 和 WASM 只在 SQL 練習進入畫面時才載入。
 - 所有按鈕在手機上至少 44 px 高；預覽區和編輯區上下排列。
 - 迴圈保護用的語法解析器 acorn，打包後約 113 KB、壓縮後約 34 KB，包在練習元件（preview、api）裡，所以只有有這種練習的頁面才會載入。實測（2026-10-20）：有練習的頁面，JavaScript 合計約 85 KB（壓縮後，含網站本身的 JavaScript），在 100 KB 的目標內；之後加測驗和進度元件時要留意剩下的 15 KB。
+- **加了測驗和進度之後（T-010，2026-10-20）**：第 1 課頁面（3 個練習、測驗、2 張圖解）在 Edge 載入並捲到最下面之後，每個 `.js` 檔各自 gzip 加總：外部 .js 16 個共 84.2 KB（brotli 69.0 KB），加上頁面裡直接寫的 `<script>` 5.1 KB，**合計 89.3 KB**，離 100 KB 還有約 10 KB。其中測驗（`QuizApp`）約 1.3 KB、側邊欄進度約 0.8 KB；`ExerciseApp`（含 acorn）43.1 KB、Starlight 的 `ui-core` 25.9 KB 是最大的兩塊。量法：`astro build`（暫時把第 1 課的 `draft` 改成 `false`，量完改回）加 `astro preview`，用 Playwright 的 Edge 開頁面、一路捲到底，記下載入的每個 `.js`。每增加一課或一種元件，要重新量。
 
 ## B11. 預設做法（待 Claude-A 和使用者確認）
 
@@ -929,3 +940,4 @@ interface LessonContext {
 | 1.1 | 2026-10-19 | 照 T-009 的實測補充，都是補充或釐清，內容檔不用改：沙箱安全規則在 Chromium 的驗證結果、逾時的處理（逾時也算沒通過；沒有 steps 的 case 逾時，後面的 case 直接失敗）、`attr` 的空白處理和 `present: false`、進度儲存多了 `failedAttempts`、`revealShown`、`lastFailedCheck` 和 `getExercise`、`getContext()` 的細節 |
 | 1.1.1 | 2026-10-20 | T-009 收尾，都是實作備忘（第二部分）的補充，內容檔不用改：迴圈保護（同一頁的沙箱 iframe 共用一個瀏覽器程序，一個卡住整頁都壞掉，所以要在執行前中止無窮迴圈）、預覽每次更新換新的 iframe 和看門狗（ping）、結果驗證、探針用完拿掉、style 檢查不要用百分比、<Diagram> 的無障礙屬性放在內層、已知限制 |
 | 1.2 | 2026-10-20 | T-019b，除了「草稿課文可以少寫欄位」以外都是補充或釐清，內容檔不用改：草稿課文（`draft: true`）只要有 `title`、`description`、`sidebar.order`、`draft`，有寫的欄位照常檢查（2.1、B9）；圖解禁用動畫元素、`font-size` 的寫法、同一課所有圖解的 `id` 不能重複、文字不要擠到邊（作者和審稿人自己量，檢查器不量）（第 5 節）；YAML 的引號：含 ASCII 雙引號的文字整段改用單引號（7.2）；SQL 的 3 秒從引擎載入完成起算、載入另有 20 秒上限（B5）；`test:exercises` 的 SQL 練習不用瀏覽器（B9）；`check:content` 的訊息：缺少的必填欄位合成一行、課文有別的錯誤時不再連帶報練習和測驗「未被引用」（B9） |
+| 1.2.1 | 2026-10-20 | T-010，都是實作備忘（第二部分）的補充，內容檔不用改：測驗元件的做法（說明顯示在選項下面、答對後再點只看說明、`picked` 記錄選項的原始位置、`QuizAnswer` 多了可省略的 `picked`、伺服器端只有題目、手機版面的 `minmax(0, 1fr)`）（B6、B7）；進度多了 `readQuizAnswers`、`isExerciseDone`、`isLessonDone`，「一課完成」是算出來的；側邊欄進度改成每個課程頁的課文放 `<SidebarProgress />`（B7）；`getContext()` 對測驗的處理（B8）；加了測驗和進度之後的 JavaScript 大小（B10） |

@@ -1,0 +1,24 @@
+---
+// 放在每一個課程頁的課文裡（<SidebarProgress />）：讓側邊欄的「學習進度」跟著進度更新（docs/CONTRACT.md B7）。
+// 更新程式要知道每一課要做完哪些練習、測驗有哪幾題，所以在建置時把這份清單寫進頁面。
+import { getCollection } from 'astro:content';
+
+const quizzes = await getCollection('quizzes');
+const lessons = await getCollection('docs', ({ id }) => /^lessons\/lesson-\d+$/.test(id));
+const manifest = Object.fromEntries(
+	lessons.map(({ id, data }) => [
+		id.replace('lessons/', ''),
+		{
+			exercises: data.exercises ?? [],
+			questions: quizzes.find((quiz) => quiz.id === data.quiz)?.data.questions.map((question) => question.id) ?? [],
+		},
+	]),
+);
+// 放進 <script> 裡，不能出現 "<"（例如 "</script>"）
+const json = JSON.stringify(manifest).replace(/</g, '\\u003c');
+---
+
+<script is:inline type="application/json" id="vl-lesson-manifest" set:html={json} />
+<script>
+	import './sidebar-progress';
+</script>
