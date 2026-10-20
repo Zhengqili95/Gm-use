@@ -49,6 +49,23 @@ function isState(value: unknown): value is ProgressState {
   return candidate.schema === 1 && typeof candidate.lessons === 'object' && candidate.lessons !== null;
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+// localStorage 的內容可能被改壞或舊版留下的：每一課至少要有 exercises 物件、quiz 要有 answers 物件，
+// 壞掉的那一塊直接丟掉（當作還沒有進度），不要讓後面的 updateExercise、updateQuiz 出錯。
+function normalize(state: ProgressState): ProgressState {
+  const lessons: Record<string, LessonProgress> = {};
+  for (const [id, lesson] of Object.entries(state.lessons as Record<string, unknown>)) {
+    if (!isRecord(lesson)) continue;
+    const next: LessonProgress = { exercises: isRecord(lesson.exercises) ? (lesson.exercises as Record<string, ExerciseProgress>) : {} };
+    if (isRecord(lesson.quiz) && isRecord(lesson.quiz.answers)) next.quiz = { answers: lesson.quiz.answers as QuizProgress['answers'] };
+    lessons[id] = next;
+  }
+  return { schema: 1, lessons };
+}
+
 let cache: ProgressState | null = null;
 const listeners = new Set<(state: ProgressState) => void>();
 
@@ -61,7 +78,7 @@ function load(): ProgressState {
   } catch {
     // 讀不到或內容壞掉：當作還沒有進度
   }
-  cache = isState(parsed) ? parsed : emptyState();
+  cache = isState(parsed) ? normalize(parsed) : emptyState();
   return cache;
 }
 
@@ -85,7 +102,8 @@ export function getProgress(): ProgressState {
 }
 
 export function getExercise(exerciseId: string): ExerciseProgress | undefined {
-  return load().lessons[lessonIdOf(exerciseId)]?.exercises[exerciseId];
+  // localStorage 的內容可能被改壞（少了 exercises 之類），所以每一層都用 ?.
+  return load().lessons[lessonIdOf(exerciseId)]?.exercises?.[exerciseId];
 }
 
 export function updateExercise(exerciseId: string, patch: Partial<ExerciseProgress>): ExerciseProgress {

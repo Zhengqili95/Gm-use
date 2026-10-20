@@ -2,6 +2,7 @@
 import type { Files, PageCheck, Step } from '../types';
 import { buildSrcdoc } from './build-srcdoc';
 import runnerSource from './iframe-runner.js?raw';
+import { sanitizeResult } from './sanitize-result';
 
 export interface CaseOutcome {
   results: Array<{ id: string; passed: boolean }>;
@@ -42,7 +43,8 @@ export function runCase(files: Files, steps: Step[], checks: PageCheck[], timeou
       if (data.type === 'ready') {
         iframe.contentWindow?.postMessage({ source: 'vibe', type: 'run', steps, checks }, '*');
       } else if (data.type === 'result') {
-        finish({ results: data.results, errors: data.errors ?? [], timedOut: false });
+        // 訊息可能是學習者的程式送的，不能照單全收（sanitize-result.ts）
+        finish({ ...sanitizeResult(data, checks.map((check) => check.id)), timedOut: false });
       }
     }
 

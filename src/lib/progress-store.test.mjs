@@ -77,6 +77,32 @@ describe('進度儲存', () => {
     }
   });
 
+  it('某一課的內容壞掉（少了 exercises、quiz 不是物件…）：丟掉壞的那一塊，其他課照舊，之後的更新不會出錯', () => {
+    const exercise = { status: 'passed', attempts: 1, failedAttempts: 0, hintsShown: 0, revealShown: false, files: {}, updatedAt: '' };
+    globalThis.localStorage.setItem(
+      store.STORAGE_KEY,
+      JSON.stringify({
+        schema: 1,
+        lessons: {
+          'lesson-1': {}, // 少了 exercises
+          'lesson-2': { exercises: 'oops', quiz: { answers: 5 } },
+          'lesson-3': 'bad',
+          'lesson-4': { exercises: { 'lesson-4/ex-1': exercise }, quiz: { answers: { q1: { firstTryCorrect: true, tries: 1, done: true } } } },
+        },
+      }),
+    );
+    store.__resetCacheForTests();
+    assert.equal(store.getExercise('lesson-1/ex-1'), undefined);
+    assert.equal(store.getExercise('lesson-2/ex-1'), undefined);
+    assert.deepEqual(Object.keys(store.getProgress().lessons).sort(), ['lesson-1', 'lesson-2', 'lesson-4']);
+    store.updateExercise('lesson-1/ex-1', { status: 'attempted' });
+    store.updateQuiz('lesson-2', 'q1', { tries: 1 });
+    assert.equal(store.getExercise('lesson-1/ex-1').status, 'attempted');
+    assert.equal(store.getProgress().lessons['lesson-2'].quiz.answers.q1.tries, 1);
+    assert.equal(store.getExercise('lesson-4/ex-1').status, 'passed'); // 好的那一課沒有被動到
+    assert.equal(store.getProgress().lessons['lesson-4'].quiz.answers.q1.done, true);
+  });
+
   it('localStorage 用不了（讀寫都丟例外）：退回記憶體，不丟例外', () => {
     const broken = {
       getItem() { throw new Error('SecurityError'); },

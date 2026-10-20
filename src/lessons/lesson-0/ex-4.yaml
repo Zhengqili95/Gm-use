@@ -1,0 +1,36 @@
+# 開發用的測試練習，只給 npm run test:exercises 用，不顯示在 /dev/lab/；lesson-0 不是真正的課。
+# 回歸測試（M-047）：檢查 style 時用的探針元素用完要拿掉。
+# 探針留在 body 裡的話，body 的最後一個子元素會變成它，第二條檢查就會失敗，標準答案也跟著沒過。
+contract: 1
+id: lesson-0/ex-4
+type: preview
+title: "（測試）style 檢查不能影響後面的檢查"
+goal: "把文字顏色改成紅色（red）"
+minutes: 1
+files:
+  index.html: |
+    <link rel="stylesheet" href="style.css">
+    <p id="msg">你好</p>
+  style.css: |
+    #msg { color: black; }
+editable: [style.css]
+solution:
+  style.css: |
+    #msg { color: red; }
+checks:
+  - id: color-red
+    type: style
+    selector: "#msg"
+    property: color
+    equals: "red"
+    hint: "找到 color 那一行，把值改成 red。"
+  - id: last-child-text
+    type: text
+    selector: "body > :last-child"
+    equals: "你好"
+    hint: "body 的最後一個子元素應該是那個段落。"
+hints:
+  - "CSS 用「屬性: 值;」的格式設定外觀。"
+  - "看 style.css 裡 #msg 那一行的 color。"
+  - "color: blue; 會把文字改成藍色。"
+success: "好"
