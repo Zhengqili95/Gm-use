@@ -4,7 +4,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
-import { findExercises, formatLine, judge, shapeProblem, SKIPPED, summary } from './lib.mjs';
+import { findExercises, formatLine, fromSqlResult, judge, shapeProblem, SKIPPED, summary } from './lib.mjs';
 
 function makeLessons(files) {
 	const dir = mkdtempSync(join(tmpdir(), 'vibe-learn-ex-'));
@@ -79,9 +79,42 @@ describe('基本格式', () => {
 		assert.equal(shapeProblem({ ...good, files: { 'style.css': '' } }), 'files 裡沒有 index.html');
 		assert.equal(shapeProblem({ ...good, solution: undefined }), '沒有 solution');
 	});
-	it('api、sql 先略過', () => {
-		assert.ok(SKIPPED.api && SKIPPED.sql);
+	it('只有 api 先略過；sql 已經接上 T-015a 的執行核心（T-009c）', () => {
+		assert.ok(SKIPPED.api);
+		assert.equal(SKIPPED.sql, undefined);
 		assert.equal(SKIPPED.preview, undefined);
+	});
+	it('sql 練習要有 setup、starter、solution', () => {
+		const sql = { type: 'sql', setup: 'CREATE TABLE t(a);', starter: 'SELECT 1;', solution: 'SELECT a FROM t;', checks: [{ id: 'c', type: 'rows' }] };
+		assert.equal(shapeProblem(sql), null);
+		assert.equal(shapeProblem({ ...sql, setup: undefined }), '沒有 setup');
+		assert.equal(shapeProblem({ ...sql, starter: '   ' }), '沒有 starter');
+		assert.equal(shapeProblem({ ...sql, solution: 42 }), '沒有 solution');
+	});
+});
+
+describe('SQL 執行核心的結果', () => {
+	it('換成和網頁練習一樣的形狀', () => {
+		assert.deepEqual(fromSqlResult({ status: 'ok', checks: [{ id: 'a', passed: true }, { id: 'b', passed: false }] }), {
+			passed: { a: true, b: false },
+			errors: [],
+			timedOut: false,
+		});
+	});
+	it('出錯時附上 SQLite 的訊息，逾時標成 timedOut', () => {
+		assert.deepEqual(fromSqlResult({ status: 'error', error: 'near "SELEC": syntax error', checks: [{ id: 'a', passed: false }] }), {
+			passed: { a: false },
+			errors: ['near "SELEC": syntax error'],
+			timedOut: false,
+		});
+		assert.deepEqual(fromSqlResult({ status: 'timeout', checks: [{ id: 'a', passed: false }] }), {
+			passed: { a: false },
+			errors: [],
+			timedOut: true,
+		});
+	});
+	it('結果怪掉時，每一條檢查都算沒過', () => {
+		assert.deepEqual(fromSqlResult(undefined), { passed: {}, errors: [], timedOut: false });
 	});
 });
 

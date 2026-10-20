@@ -1,0 +1,30 @@
+# 預期：✗ 標準答案沒過：only-favorites（程式錯誤：SQLite 的語法錯誤）
+contract: 1
+id: lesson-3/ex-3
+type: sql
+title: "標準答案有語法錯誤"
+goal: "只列出已收藏的卡片標題"
+minutes: 3
+setup: |
+  CREATE TABLE prompts (
+    id INTEGER PRIMARY KEY,
+    title TEXT NOT NULL,
+    favorite INTEGER NOT NULL DEFAULT 0
+  );
+  INSERT INTO prompts (title, favorite) VALUES
+    ('寫一封請假信', 0),
+    ('解釋程式錯誤', 1),
+    ('整理上課筆記', 0);
+starter: |
+  SELECT title FROM prompts;
+solution: |
+  SELEC title FROM prompts WHERE favorite = 1;
+checks:
+  - id: only-favorites
+    type: rows
+    columns: [title]
+    equals:
+      - ["解釋程式錯誤"]
+    hint: "加上條件，只留下 favorite 等於 1 的。"
+hints: ["一", "二", "三"]
+success: "好"

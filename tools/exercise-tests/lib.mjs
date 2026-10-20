@@ -7,7 +7,6 @@ import { parse } from 'yaml';
 // 還不能測的練習類型：印「略過」，不算通過（M-051）
 export const SKIPPED = {
 	api: 'api 練習還不支援（等 T-014 的模擬伺服器）',
-	sql: 'sql 練習還不支援（等 T-015a 的 SQL 執行核心）',
 };
 
 const LESSON = /^lesson-(\d+)$/;
@@ -56,9 +55,28 @@ export function shapeProblem(data) {
 	if (data.checks.some((check) => !isRecord(check) || typeof check.id !== 'string' || typeof check.type !== 'string')) {
 		return '有一條 check 缺少 id 或 type';
 	}
+	if (data.type === 'sql') {
+		// sql 練習：資料表、起始的 SQL、標準答案都是一段文字
+		for (const field of ['setup', 'starter', 'solution']) {
+			if (typeof data[field] !== 'string' || !data[field].trim()) return `沒有 ${field}`;
+		}
+		return null;
+	}
 	if (!isRecord(data.files) || typeof data.files['index.html'] !== 'string') return 'files 裡沒有 index.html';
 	if (!isRecord(data.solution)) return '沒有 solution';
 	return null;
+}
+
+/**
+ * 把 SQL 執行核心（T-015a 的 checkSqlExercise）的結果，換成和網頁練習一樣的形狀，才能用同一個 judge()。
+ * SQL 出錯時每一條檢查都是 false，錯誤訊息放進 errors；逾時是 timedOut。
+ */
+export function fromSqlResult(result) {
+	return {
+		passed: Object.fromEntries((result?.checks ?? []).map((check) => [check.id, check.passed === true])),
+		errors: result?.status === 'error' && result.error ? [result.error] : [],
+		timedOut: result?.status === 'timeout',
+	};
 }
 
 /**
