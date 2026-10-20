@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 240">
+  <title>HTML、CSS、JavaScript 三種語言的分工</title>
+  <desc>HTML 決定結構有什麼、CSS 決定外觀長什麼樣子、JavaScript 決定按下去會怎樣，三者共同拼出同一張 AI 提示詞收藏卡。</desc>
+  <defs>
+    <marker id="tb-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" style="fill: var(--sl-color-accent)"/>
+    </marker>
+  </defs>
+  <rect x="14" y="18" width="166" height="56" rx="8" style="fill: var(--sl-color-blue-low); stroke: var(--sl-color-blue); stroke-width: 1.5"/>
+  <text x="97" y="42" text-anchor="middle" font-size="16" style="fill: var(--sl-color-text)">HTML</text>
+  <text x="97" y="62" text-anchor="middle" font-size="14" style="fill: var(--sl-color-text)">管「有什麼」</text>
+  <rect x="14" y="92" width="166" height="56" rx="8" style="fill: var(--sl-color-orange-low); stroke: var(--sl-color-orange); stroke-width: 1.5"/>
+  <text x="97" y="116" text-anchor="middle" font-size="16" style="fill: var(--sl-color-text)">CSS</text>
+  <text x="97" y="136" text-anchor="middle" font-size="14" style="fill: var(--sl-color-text)">管「長什麼樣子」</text>
+  <rect x="14" y="166" width="166" height="56" rx="8" style="fill: var(--sl-color-green-low); stroke: var(--sl-color-green); stroke-width: 1.5"/>
+  <text x="97" y="190" text-anchor="middle" font-size="16" style="fill: var(--sl-color-text)">JavaScript</text>
+  <text x="97" y="210" text-anchor="middle" font-size="14" style="fill: var(--sl-color-text)">管「按下去會怎樣」</text>
+  <line x1="186" y1="46" x2="236" y2="74" marker-end="url(#tb-arrow)" style="stroke: var(--sl-color-accent); stroke-width: 2"/>
+  <line x1="186" y1="120" x2="236" y2="120" marker-end="url(#tb-arrow)" style="stroke: var(--sl-color-accent); stroke-width: 2"/>
+  <line x1="186" y1="194" x2="236" y2="166" marker-end="url(#tb-arrow)" style="stroke: var(--sl-color-accent); stroke-width: 2"/>
+  <rect x="246" y="26" width="180" height="188" rx="10" style="fill: var(--sl-color-accent-low); stroke: var(--sl-color-accent); stroke-width: 2"/>
+  <text x="336" y="56" text-anchor="middle" font-size="16" style="fill: var(--sl-color-text)">AI 提示詞收藏卡</text>
+  <rect x="256" y="72" width="160" height="34" rx="6" style="fill: var(--sl-color-gray-6); stroke: var(--sl-color-gray-4); stroke-width: 1"/>
+  <text x="336" y="94" text-anchor="middle" font-size="14" style="fill: var(--sl-color-text)">標題：寫一封請假信</text>
+  <rect x="256" y="116" width="160" height="34" rx="6" style="fill: var(--sl-color-gray-6); stroke: var(--sl-color-gray-4); stroke-width: 1"/>
+  <text x="336" y="138" text-anchor="middle" font-size="14" style="fill: var(--sl-color-text)">淡黃底色＋24px 內距</text>
+  <rect x="256" y="160" width="160" height="36" rx="6" style="fill: var(--sl-color-gray-6); stroke: var(--sl-color-accent); stroke-width: 1.5"/>
+  <text x="336" y="183" text-anchor="middle" font-size="14" style="fill: var(--sl-color-text)">按鈕：★ 已收藏</text>
+</svg>

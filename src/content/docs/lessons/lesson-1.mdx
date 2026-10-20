@@ -1,19 +1,166 @@
 ---
-title: 第 1 課｜畫面是怎麼拼出來的
-description: 用 HTML、CSS、JavaScript 做出 AI 提示詞收藏卡。
-# 還沒做好的課先設成草稿：正式網站不顯示，首頁標「即將推出」（D-013 做法 A）
-draft: true
+title: "第 1 課｜畫面是怎麼拼出來的"
+description: "認識 HTML、CSS、JavaScript 的分工，親手做出一張可以按「收藏」的 AI 提示詞卡片。"
 sidebar:
   order: 1
-  label: 1. 畫面是怎麼拼出來的
+  label: "1. 畫面是怎麼拼出來的"
+contract: 1
+lesson: 1
+minutes: 20
+oneThing: "網頁由三種語言分工：HTML 管「有什麼」、CSS 管「長什麼樣子」、JavaScript 管「按下去會怎樣」"
+result: "做出一張可以按「收藏」的 AI 提示詞卡片"
+sources:
+  - title: "MDN：HTML：超文本標記語言"
+    url: "https://developer.mozilla.org/zh-TW/docs/Web/HTML"
+  - title: "MDN：<button>：按鈕元素"
+    url: "https://developer.mozilla.org/zh-TW/docs/Web/HTML/Reference/Elements/button"
+  - title: "MDN：CSS"
+    url: "https://developer.mozilla.org/zh-TW/docs/Web/CSS"
+  - title: "MDN：background-color"
+    url: "https://developer.mozilla.org/zh-TW/docs/Web/CSS/Reference/Properties/background-color"
+  - title: "MDN：padding（英文頁）"
+    url: "https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Properties/padding"
+  - title: "MDN：JavaScript"
+    url: "https://developer.mozilla.org/zh-TW/docs/Web/JavaScript"
+  - title: "MDN：EventTarget: addEventListener()（英文頁）"
+    url: "https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener"
+  - title: "MDN：Node: textContent（英文頁）"
+    url: "https://developer.mozilla.org/en-US/docs/Web/API/Node/textContent"
+exercises: [lesson-1/ex-1, lesson-1/ex-2, lesson-1/ex-3]
+quiz: lesson-1/quiz
+gates: { sources: false, review: false, trial: false }
+draft: true
 ---
 
-import IslandCheck from '../../../components/layout/IslandCheck.tsx';
+import Exercise from '../../../components/exercises/Exercise.astro';
+import Quiz from '../../../components/quiz/Quiz.astro';
+import Diagram from '../../../components/lesson/Diagram.astro';
+import SidebarProgress from '../../../components/progress/SidebarProgress.astro';
+import { Aside } from '@astrojs/starlight/components';
 
-:::note[外殼的佔位頁]
-這一頁是 T-007 平台外殼放的佔位內容，T-010 會換成正式的第 1 課。
-:::
+<SidebarProgress />
 
-下面的按鈕用來確認互動元件（Preact）能正常運作。按一下，文字應該會變：
+## 開場
 
-<IslandCheck client:load />
+想像你請 AI 幫你做一個「AI 提示詞（prompt）收藏夾」網頁。AI 幾秒鐘就寫好一堆程式碼，但你打開預覽一看，卻發現卡片顏色太刺眼、收藏按鈕按下去也沒反應。這時候如果你知道畫面是由哪三種語言拼出來的，就能精準指出問題，甚至自己動手改好那一兩行程式碼。
+
+當你在瀏覽器打開一個網址時，瀏覽器會先向遠方的伺服器（server）要檔案；伺服器把寫好的網頁檔案送回來，瀏覽器再照著裡面的指令把畫面畫出來（跟伺服器要資料的細節，我們留到第 2 課再聊）。
+
+<Diagram name="lesson-1/browser-server" alt="瀏覽器向伺服器發出請求要檔案，伺服器把網頁檔案送回給瀏覽器畫出畫面" />
+
+網頁檔案裡最重要的就是三種語言的分工：**HTML**（超文本標記語言）管畫面上「有什麼」、**CSS**（階層樣式表）管它們「長什麼樣子」、**JavaScript**（網頁用的程式語言）管「按下去會怎樣」。這課結束時，你會親手用這三種語言，做出一張可以按「收藏」的 AI 提示詞卡片。
+
+<Diagram name="lesson-1/three-brothers" alt="HTML、CSS、JavaScript 三個方塊分工合作，分別決定同一張提示詞卡片的結構、外觀與行為" />
+
+## HTML：決定「有什麼」
+
+如果只給瀏覽器一段純文字，它分不出哪一句是大標題、哪一句是內文、哪一個又是可以點擊的按鈕。為了讓瀏覽器看懂結構，HTML 會用標籤（tag）把內容包起來，標明每個部分的身分。
+
+舉例來說，想放一個卡片標題和一個按鈕，HTML 會這樣寫：
+
+```html
+<article class="card">
+  <h2 id="title">寫一封請假信</h2>
+  <p id="body">請幫我寫一封給老師的請假信，語氣有禮貌，100 字以內。</p>
+  <p class="meta"><span id="tag">寫作</span></p>
+  <button id="fav" type="button">☆ 收藏</button>
+</article>
+```
+
+看這段程式碼時，先抓三個重點：
+
+1. **大部分標籤是成對的**：例如 `<h2>` 是標題的開頭標籤，`</h2>` 多了一條斜線，代表標題到這裡結束。開頭標籤、中間包住的文字、加上結尾標籤，合起來就叫做一個元素（element）。少數標籤沒有結尾標籤（例如後面練習裡的 `<link>`），先知道有這回事就好。
+2. **元素可以裝在另一個元素裡面**：就像大盒子裝小盒子，最外層的 `<article>` 代表整張卡片，裡面裝著標題 `<h2>`、段落 `<p>` 和按鈕 `<button>`。
+3. **用 `id` 幫元素取名字**：開頭標籤裡像 `id="fav"` 或 `type="button"` 這樣的額外設定，叫做 HTML 屬性（attribute）。其中 `id` 是這個元素獨一無二的名字；等一下 CSS 與 JavaScript 都要靠名字或 `class` 分類來找到對應的元素。
+
+現在下面這張提示詞卡片已經有標題和內容，但還少了一顆收藏按鈕，請你親手把它補上去。
+
+<Exercise id="lesson-1/ex-1" />
+
+## CSS：決定「長什麼樣子」
+
+剛才補上按鈕之後，卡片的結構已經完整了，但看起來白底黑字、文字也貼著邊框。為什麼不在 HTML 裡順便設定顏色就好？因為把「內容結構」和「視覺外觀」分開管理，以後想幫整個網站換配色時，才不用去改動每一篇文字。這就是 CSS 負責的工作。
+
+CSS 的寫法固定是「先點名要改誰，再到大括號裡寫外觀設定」：
+
+```css
+.card {
+  background-color: lightyellow;
+  padding: 24px;
+}
+```
+
+這段程式碼分成兩個部分：
+
+1. **選擇器（selector）**：大括號前面的 `.card` 就是選擇器，前面的小圓點代表「去畫面上找出 `class` 是 `card` 的那個元素」。
+2. **CSS 屬性（property）與值**：大括號 `{ }` 裡每一行都用「CSS 屬性: 值;」的格式撰寫（注意這跟寫在 HTML 標籤裡的 HTML 屬性不同）。
+   - `background-color` 用來設定背景顏色，例如寫 `lightyellow` 就會變成淡黃色。
+   - `padding` 用來設定內距，也就是卡片邊框跟裡面文字之間的留白空間；`24px` 的 `px` 是像素（螢幕上最小的一個點），把值改成 `24px`，就是留出 24 像素的空間，文字就不會擠在邊框上。
+
+試著改改看下面這張卡片的 `style.css`，幫它換上淡黃色背景並加大內距。
+
+<Exercise id="lesson-1/ex-2" />
+
+## JavaScript：決定「按下去會怎樣」
+
+現在卡片有了結構，也有了舒服的配色與留白，但你用滑鼠點「☆ 收藏」按鈕時，畫面卻毫無動靜。這是因為 HTML 和 CSS 只負責畫出靜態的樣子；要讓網頁對使用者的動作產生反應，必須交給 JavaScript。
+
+使用者在網頁上做的動作——像是按下按鈕（`click`）——在程式裡稱為事件（event）。JavaScript 的工作方式就是：「當某個事件發生時，去找到畫面上的元素，改變它的內容。」
+
+看看下面這段控制按鈕的程式碼：
+
+```js
+const button = document.getElementById("fav");
+
+button.addEventListener("click", function () {
+  button.textContent = "★ 已收藏";
+});
+```
+
+我們一行一行拆開來看：
+
+1. **找到按鈕**：第一行 `document.getElementById("fav")` 先照著看就好，意思是請瀏覽器去畫面上找出 `id` 叫做 `fav` 的那個按鈕，並在程式裡稱呼它為 `button`。
+2. **聽候點擊事件**：第二行 `button.addEventListener("click", function () { ... })` 裡的函式（function）語法也先照著寫就好，意思是「盯著這顆按鈕，當它發生 `click`（被按下去）事件時，馬上執行大括號 `{ }` 裡面的那行指令」。
+3. **改變按鈕上的文字**：大括號裡的 `button.textContent = "★ 已收藏";` 就是真正改變畫面的指令。`textContent` 代表按鈕裡面的文字，等號代表把右邊的新文字換進去。
+
+輪到你了！請在 `script.js` 的大括號裡補上改文字的那一行，讓收藏按鈕真正動起來。
+
+<Exercise id="lesson-1/ex-3" />
+
+{/* 可選加項：試讀後決定要不要留 */}
+
+## 和 AI 一起用
+
+<Aside type="tip" title="和 AI 一起用">
+當你請 AI 幫你寫網頁或修改小工具時，如果先把「結構（HTML）、外觀（CSS）、行為（JavaScript）」分開講清楚，AI 就不會亂改一通。你可以直接複製下面三句提示詞試試看：
+
+1. **請 AI 先做出結構與外觀**：「請用 HTML 和 CSS 幫我做一張『AI 提示詞收藏卡』，包含標題、內容段落、分類標籤，以及一顆 `id` 為 `fav` 的收藏按鈕。」
+2. **請 AI 只改外觀、別動內容**：「請不要改動 HTML 結構，只幫我修改 CSS：把 `.card` 的 `background-color` 改成淡黃色，並把內距 `padding` 調大到 `24px`。」
+3. **請 AI 補上點擊行為**：「畫面上那顆 `id` 是 `fav` 的按鈕按下去沒反應，請幫我補上一段 JavaScript：當點擊 `#fav` 時，把按鈕的文字改成『★ 已收藏』。」
+
+**拿到 AI 給你的程式碼後，先檢查這三件事**：
+- 能不能分辨出哪一塊是 HTML（標籤結構）、哪一塊是 CSS（顏色與間距）、哪一塊是 JavaScript（點擊反應）？
+- 需要互動的按鈕，開頭標籤裡有沒有寫上正確的 `id`？
+- 在預覽畫面裡實際按一下按鈕，文字有沒有照你的意思改變，還是跳出了錯誤訊息？
+</Aside>
+
+{/* 可選加項：試讀後決定要不要留 */}
+
+## 本課英文用語
+
+看 AI 寫的程式碼或閱讀錯誤訊息時，最常遇到下面這 6 個英文詞：
+
+| 英文 | 中文 | 一句英文例句 |
+|---|---|---|
+| tag | 標籤 | The `<button>` tag creates a clickable button on the page. |
+| element | 元素 | This card element contains a heading and a paragraph. |
+| attribute | HTML 屬性 | Give the button an `id` attribute so JavaScript can find it. |
+| selector | 選擇器 | The `.card` selector targets the whole prompt card. |
+| property | CSS 屬性 | Use the `background-color` property to change the card's color. |
+| event | 事件 | Run this code when the button's `click` event happens. |
+
+## 小測驗
+
+做完下面 5 題小測驗，確認你已經掌握 HTML、CSS 與 JavaScript 的分工！
+
+<Quiz id="lesson-1/quiz" />

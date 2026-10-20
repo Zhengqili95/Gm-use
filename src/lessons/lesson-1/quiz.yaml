@@ -1,0 +1,58 @@
+contract: 1
+id: lesson-1/quiz
+questions:
+  - id: q1
+    prompt: "在網頁的三種語言分工裡，HTML、CSS、JavaScript 各自負責什麼？"
+    options:
+      - text: "HTML 管有什麼（結構）、CSS 管長什麼樣子（外觀）、JavaScript 管按下去會怎樣（行為）"
+        correct: true
+        explain: "答對了！HTML 負責標記標題與按鈕等結構，CSS 負責顏色與間距，JavaScript 負責點擊後的互動反應。"
+      - text: "HTML 管顏色與間距、CSS 管按鈕點擊反應、JavaScript 管網頁裡有哪些文字"
+        explain: "剛好顛倒了：顏色與間距是 CSS 的工作，點擊反應是 JavaScript 的工作，文字與標籤結構才是 HTML 管的。"
+      - text: "HTML 管跟伺服器要資料、CSS 管儲存資料、JavaScript 管畫出背景顏色"
+        explain: "背景顏色是由 CSS 負責；在這課裡，這三種語言都是在瀏覽器裡分工拼出畫面與互動。"
+  - id: q2
+    prompt: "覺得提示詞卡片的文字太貼近邊框、背景顏色也不好看，應該去改哪一個檔案？"
+    options:
+      - text: "改 style.css 裡面的 padding 和 background-color"
+        correct: true
+        explain: "沒錯！內距（padding）和背景顏色（background-color）都屬於視覺外觀，由 CSS 負責管理。"
+      - text: "改 index.html 裡面的 h2 和 p 標籤名稱"
+        explain: "HTML 標籤決定的是「這一塊是標題還是段落」，不會用來調整留白距離或背景顏色。"
+      - text: "改 script.js 裡面的 click 事件程式碼"
+        explain: "JavaScript 的 click 事件是等使用者按下按鈕才觸發的行為，平常的卡片底色和內距是由 CSS 設定的。"
+  - id: q3
+    prompt: '為什麼我們要在 HTML 的按鈕開頭標籤裡寫上 id="fav"？'
+    options:
+      - text: "幫這顆按鈕取一個獨一無二的名字，讓 JavaScript 可以靠這個名字找到它"
+        correct: true
+        explain: "對！有了 id 這個名字，JavaScript 才能用 getElementById 準確抓到這顆按鈕並幫它加上點擊反應。"
+      - text: '寫上 id="fav" 之後，瀏覽器就會自動把按鈕的背景變成淡黃色'
+        explain: "id 只是元素的名字，本身不會改變任何顏色；要改顏色必須靠 CSS 設定。"
+      - text: "因為沒有寫 id 的話，HTML 標籤就不算成對，按鈕會完全消失"
+        explain: "沒有寫 id 按鈕一樣會顯示在畫面上，只是當我們想用程式控制特定按鈕時，沒有名字會很難找到它。"
+  - id: q4
+    prompt: "閱讀下面這段 JavaScript 程式碼，當使用者在畫面上點擊這顆按鈕時，會發生什麼事？"
+    code: |
+      const button = document.getElementById("fav");
+      button.addEventListener("click", function () {
+        button.textContent = "★ 已收藏";
+      });
+    options:
+      - text: "按鈕上的文字會馬上變成「★ 已收藏」"
+        correct: true
+        explain: "答對了！addEventListener 偵測到 click 事件後，就會執行大括號裡的指令，把 button 的文字換成「★ 已收藏」。"
+      - text: "要等使用者重新整理瀏覽器之後，按鈕文字才會變成「★ 已收藏」"
+        explain: "JavaScript 會在點擊事件發生的當下立刻修改畫面上的文字，不需要重新整理網頁。"
+      - text: "整張卡片的背景顏色會變成黃色，但按鈕文字不會改變"
+        explain: "程式碼裡改的是 textContent（文字內容），並沒有修改任何背景顏色的設定。"
+  - id: q5
+    prompt: "你請 AI 幫你寫了一張提示詞卡片，畫面看起來很漂亮，但點「收藏」按鈕卻完全沒反應。你最應該先請 AI 檢查哪裡？"
+    options:
+      - text: "檢查 JavaScript 有沒有綁定 click 事件，以及按鈕的 id 名稱有沒有對上"
+        correct: true
+        explain: "完全正確！「按下去會怎樣」是由 JavaScript 負責的，最常見的原因就是沒寫點擊事件，或 getElementById 找錯了 id 名字。"
+      - text: "請 AI 把 CSS 的 padding 內距調大一點，讓按鈕比較好按"
+        explain: "CSS 只會改變按鈕看起來的大小和留白，就算調得再大，沒有 JavaScript 事件一樣不會有反應。"
+      - text: "請 AI 把 HTML 的標題文字寫短一點，減少瀏覽器的負擔"
+        explain: "標題文字的長短不會影響按鈕有沒有反應，互動沒有作用通常都是 JavaScript 或 id 對接的問題。"

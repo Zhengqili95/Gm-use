@@ -1,0 +1,60 @@
+contract: 1
+id: lesson-1/ex-3
+type: preview
+title: "讓收藏按鈕按下去會變字"
+goal: "補上一行程式碼，讓按鈕被按下去以後，文字變成「★ 已收藏」"
+minutes: 3
+files:
+  index.html: |
+    <link rel="stylesheet" href="style.css">
+    <article class="card">
+      <h2 id="title">寫一封請假信</h2>
+      <p id="body">請幫我寫一封給老師的請假信，語氣有禮貌，100 字以內。</p>
+      <p class="meta"><span id="tag">寫作</span></p>
+      <button id="fav" type="button">☆ 收藏</button>
+    </article>
+    <script src="script.js"></script>
+  style.css: |
+    .card {
+      background-color: lightyellow;
+      padding: 24px;
+      border: 1px solid #cccccc;
+      border-radius: 8px;
+    }
+  script.js: |
+    const button = document.getElementById("fav");
+
+    button.addEventListener("click", function () {
+      // 在這裡補上一行：把 button 的文字改成「★ 已收藏」
+    });
+editable: [script.js]
+solution:
+  script.js: |
+    const button = document.getElementById("fav");
+
+    button.addEventListener("click", function () {
+      button.textContent = "★ 已收藏";
+    });
+checks:
+  - id: initial-unfavorited
+    type: text
+    selector: "#fav"
+    equals: "☆ 收藏"
+    hint: "還沒按按鈕之前，文字應該維持「☆ 收藏」；請確認改文字的那一行是寫在 click 事件的大括號裡面。"
+  - id: after-click-favorited
+    type: text
+    selector: "#fav"
+    equals: "★ 已收藏"
+    steps:
+      - click: "#fav"
+    hint: "按下按鈕後文字沒有變成「★ 已收藏」；檢查大括號裡面有沒有設定 button.textContent，且文字是否完全一致。"
+  - id: no-runtime-error
+    type: noError
+    steps:
+      - click: "#fav"
+    hint: "執行時發生了錯誤；檢查你補上的那一行，新文字前後有沒有成對的英文雙引號，以及大小寫是否為 textContent。"
+hints:
+  - "JavaScript 可以在點擊事件發生時執行大括號裡的程式碼，透過修改元素的 textContent 來換掉畫面上的文字。"
+  - "打開 script.js，找到 addEventListener 大括號裡面的註解那一行，在它下面補上改文字的指令。"
+  - 'button.textContent = "已送出"; 會把 button 的文字換成「已送出」。'
+success: "太棒了！你親手把 HTML 的結構、CSS 的外觀和 JavaScript 的互動行為拼成一張完整的提示詞卡片了！"
