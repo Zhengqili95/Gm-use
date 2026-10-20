@@ -1,0 +1,28 @@
+---
+// 課文裡的 <Diagram name="lesson-1/browser-server" alt="…" caption="…" />：把圖解的 SVG 直接內嵌進頁面（docs/CONTRACT.md 第 5 節、B1）。
+// 不用 <img>：SVG 裡的 var(--sl-color-…) 要在頁面裡才套得到主題顏色，深色、淺色模式才會跟著變。
+import './diagram.css';
+
+interface Props {
+	name: string; // 'lesson-1/browser-server' → src/lessons/lesson-1/diagrams/browser-server.svg
+	alt: string; // 給看不到圖的人用的說明，一句話
+	caption?: string; // 圖下面的說明文字，可以省略
+}
+
+const { name, alt, caption } = Astro.props;
+
+const svgs = import.meta.glob<string>('/src/lessons/*/diagrams/*.svg', { query: '?raw', import: 'default', eager: true });
+const match = /^(lesson-\d+)\/([a-z][a-z0-9-]*)$/.exec(name);
+const svg = match ? svgs[`/src/lessons/${match[1]}/diagrams/${match[2]}.svg`] : undefined;
+if (!svg) {
+	throw new Error(
+		`找不到圖解「${name}」：請確認 src/lessons/<課>/diagrams/<名稱>.svg 存在，而且課文裡的 name 寫成 lesson-1/名稱 的樣子。`,
+	);
+}
+---
+
+<figure class="vl-diagram">
+	{/* role="img" 放在圖的外面一層、不放在 figure 上：這樣圖說（figcaption）還是讀得到 */}
+	<div role="img" aria-label={alt} set:html={svg} />
+	{caption && <figcaption>{caption}</figcaption>}
+</figure>

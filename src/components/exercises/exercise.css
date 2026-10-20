@@ -114,6 +114,20 @@
   color: var(--sl-color-red);
 }
 
+/* 預覽卡住了（沒有回應）的提示 */
+.vl-ex-notice {
+  margin: 0.5rem 0 0;
+  padding: 0.5rem 0.75rem;
+  border-inline-start: 4px solid var(--sl-color-red);
+  border-radius: 0.25rem;
+  font-size: var(--sl-text-sm);
+  background: var(--sl-color-bg);
+}
+
+.vl-ex-notice p {
+  margin: 0 0 0.25rem;
+}
+
 .vl-ex-others {
   margin-top: 0.5rem;
   font-size: var(--sl-text-sm);

@@ -3,11 +3,16 @@ import { registerExercise, touchExercise } from '../../lib/learn-context';
 import { getExercise, updateExercise } from '../../lib/progress-store';
 import { canReveal, initialFlow, isDone, reduce } from './flow';
 import { buildSrcdoc } from './runner/build-srcdoc';
+import { LOOP_ABORT_MARK } from './runner/guard-loops';
 import iframeRunner from './runner/iframe-runner.js?raw';
 import { runChecks } from './runner/run-checks';
 import type { Files, PageExercise } from './types';
 
 const HINT_LABELS = ['觀念提醒', '檢查位置', '語法範例'] as const;
+
+// 預覽載入完成之後，頁面會回 ready；超過這麼久沒回，就是學習者的程式卡住了（一般的無窮迴圈會先被迴圈保護中止，B3）
+const PREVIEW_READY_TIMEOUT_MS = 5000;
+const PREVIEW_PING_INTERVAL_MS = 1000;
 
 type Feedback = { kind: 'pass' | 'fail' | 'timeout'; text: string; remaining?: number } | null;
 type FailedCheck = { id: string; hint: string } | undefined;
@@ -24,9 +29,12 @@ export default function ExerciseApp({ exercise }: { exercise: PageExercise }) {
   const [feedback, setFeedback] = useState<Feedback>(null);
   const [checking, setChecking] = useState(false);
   const [pageErrors, setPageErrors] = useState<string[]>([]);
-  const [previewDoc, setPreviewDoc] = useState(() => buildSrcdoc(startFiles, iframeRunner));
+  // version 當作 iframe 的 key：內容一變就換一個新的 iframe（見下面「預覽」那段）
+  const [preview, setPreview] = useState(() => ({ doc: buildSrcdoc(startFiles, iframeRunner), version: 0 }));
+  const [previewStuck, setPreviewStuck] = useState(false);
   const [solutionOpen, setSolutionOpen] = useState(false);
   const previewRef = useRef<HTMLIFrameElement>(null);
+  const previewReadyRef = useRef(false);
 
   // 最新的值放在 ref 裡，存檔和「問 AI」的上下文才讀得到即時的內容
   const filesRef = useRef(files);
@@ -99,21 +107,51 @@ export default function ExerciseApp({ exercise }: { exercise: PageExercise }) {
     [],
   );
 
-  // 預覽：停止輸入 500 毫秒後才更新，避免每打一個字都重新載入
+  // 預覽：停止輸入 500 毫秒後才更新，避免每打一個字都重新載入。
+  // 每次更新都換一個新的 iframe（key 不同），不在同一個 iframe 上換 srcdoc：舊的卡住時，換 srcdoc 的導覽會一直等下去。
+  // 但這救不了所有情況：同一頁的沙箱 iframe 共用一個瀏覽器程序，程序卡住的話新的 iframe 也跑不動，
+  // 而且從頁面拿掉卡住的 iframe 也停不了那個程序。所以真正的防線是迴圈保護（guard-loops.ts、B3），這裡的看門狗只是最後的提示。
   useEffect(() => {
     const timer = setTimeout(() => {
       setPageErrors([]);
-      setPreviewDoc(buildSrcdoc(files, iframeRunner));
+      setPreview((current) => {
+        const doc = buildSrcdoc(files, iframeRunner);
+        return doc === current.doc ? current : { doc, version: current.version + 1 };
+      });
     }, 500);
     return () => clearTimeout(timer);
   }, [files]);
 
-  // 預覽頁裡的程式出錯時，執行器會傳訊息過來，顯示在預覽下面
+  // 預覽的看門狗：每秒問預覽頁一次（ping），載入完成的頁面會回 ready。
+  // 一直沒回，就顯示提示。伺服器端渲染的那個 iframe 在這個元件啟動之前就載入完了，錯過它自己送的 ready，所以不能只等它。
+  useEffect(() => {
+    setPreviewStuck(false);
+    previewReadyRef.current = false;
+    const startedAt = Date.now();
+    const timer = setInterval(() => {
+      if (previewReadyRef.current) {
+        clearInterval(timer);
+        return;
+      }
+      previewRef.current?.contentWindow?.postMessage({ source: 'vibe', type: 'ping' }, '*');
+      if (Date.now() - startedAt >= PREVIEW_READY_TIMEOUT_MS) {
+        setPreviewStuck(true);
+        clearInterval(timer);
+      }
+    }, PREVIEW_PING_INTERVAL_MS);
+    return () => clearInterval(timer);
+  }, [preview.version]);
+
+  // 預覽頁送來的訊息：ready（載入完成）、error（程式出錯，顯示在預覽下面）
   useEffect(() => {
     function onMessage(event: MessageEvent) {
       if (event.source !== previewRef.current?.contentWindow) return;
       const data = event.data;
-      if (data?.source === 'vibe' && data.type === 'error') {
+      if (data?.source !== 'vibe') return;
+      if (data.type === 'ready') {
+        previewReadyRef.current = true;
+        setPreviewStuck(false); // 慢慢跑完的迴圈之後恢復了，提示也跟著消失
+      } else if (data.type === 'error') {
         setPageErrors((previous) => [...previous.slice(-2), String(data.message)]);
       }
     }
@@ -132,7 +170,11 @@ export default function ExerciseApp({ exercise }: { exercise: PageExercise }) {
     // 逾時也算一次沒通過，不然學習者卡在無窮迴圈時，永遠等不到「看答案」
     dispatch({ type: 'check', passed: failed.length === 0 });
     if (outcome.timedOut) {
-      setFeedback({ kind: 'timeout', text: '程式執行太久，已經停止；檢查一下有沒有寫成一直重複的迴圈。' });
+      // 只是不再等結果了：卡住的程式可能還在背景空轉，網頁沒辦法從裡面停掉它（迴圈保護攔不到的卡住，例如不是迴圈造成的）
+      setFeedback({ kind: 'timeout', text: '程式執行太久，沒有等到結果；檢查一下程式有沒有卡住。如果頁面變慢，請重新整理。' });
+    } else if (failed.length > 0 && outcome.errors.some((message) => message.includes(LOOP_ABORT_MARK))) {
+      // 迴圈保護把一直跑不完的迴圈中止了
+      setFeedback({ kind: 'timeout', text: '程式裡有迴圈一直跑不完，已經中止；檢查一下有沒有寫成永遠不會結束的迴圈（例如忘了讓條件變成 false）。' });
     } else if (failed.length === 0) {
       setFeedback({ kind: 'pass', text: exercise.success });
     } else {
@@ -225,13 +267,22 @@ export default function ExerciseApp({ exercise }: { exercise: PageExercise }) {
         <div class="vl-ex-preview-box">
           <p class="vl-ex-label">預覽</p>
           <iframe
+            key={preview.version}
             ref={previewRef}
             class="vl-ex-preview"
             title="預覽"
             sandbox="allow-scripts"
-            srcdoc={previewDoc}
+            srcdoc={preview.doc}
             style={{ height: `${exercise.previewHeight ?? 220}px` }}
           />
+          {previewStuck && (
+            <div class="vl-ex-notice" role="status">
+              <p>預覽沒有回應，程式可能卡住了。改好程式碼後預覽會重新載入；如果沒有恢復，請重新整理頁面。</p>
+              <button type="button" class="vl-ex-button vl-ex-quiet" data-action="reload" onClick={() => location.reload()}>
+                重新整理頁面
+              </button>
+            </div>
+          )}
           {pageErrors.length > 0 && (
             <ul class="vl-ex-errors" aria-live="polite">
               {pageErrors.map((message) => (

@@ -1,5 +1,6 @@
 // 組出沙箱 iframe 的 srcdoc（docs/CONTRACT.md B3）：內容安全政策、檢查執行器、學習者的程式。
 import type { Files } from '../types';
+import { guardInlineScripts, guardLoops } from './guard-loops.ts'; // 要 Node 直接測這個檔案，所以寫出副檔名（tsconfig 允許）
 
 // 沒有寫 connect-src，所以學習者的程式連不到任何外部網路
 export const CSP =
@@ -10,9 +11,11 @@ function escapeClosing(text: string, tag: 'script' | 'style'): string {
   return text.replace(new RegExp(`</${tag}`, 'gi'), `<\\/${tag}`);
 }
 
-// index.html 用 <link href="style.css"> 和 <script src="script.js"> 參照另外兩個虛擬檔案，這裡把它們內嵌進去
+// index.html 用 <link href="style.css"> 和 <script src="script.js"> 參照另外兩個虛擬檔案，這裡把它們內嵌進去。
+// 學習者的 JavaScript 在這裡先做迴圈保護（guard-loops.ts），再放進頁面。
 export function buildBody(files: Files): string {
-  let html = files['index.html'] ?? '';
+  // 先保護 index.html 裡直接寫的 <script>，再內嵌 script.js（內嵌之後它也有 <script>，不能再保護第二次）
+  let html = guardInlineScripts(files['index.html'] ?? '');
   const css = files['style.css'];
   const js = files['script.js'];
   if (css !== undefined) {
@@ -21,7 +24,7 @@ export function buildBody(files: Files): string {
   if (js !== undefined) {
     html = html.replace(
       /<script\b[^>]*\bsrc=["']script\.js["'][^>]*>\s*<\/script>/i,
-      () => `<script>${escapeClosing(js, 'script')}</script>`,
+      () => `<script>${escapeClosing(guardLoops(js), 'script')}</script>`,
     );
   }
   return html;

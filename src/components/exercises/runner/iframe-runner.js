@@ -7,6 +7,7 @@
   var parentWin = window.parent;
   var jsErrors = [];
   var stepErrors = [];
+  var loaded = false; // 頁面載入完成（和 ready 同一個時間點）之後才回應 ping
 
   function post(message) {
     message.source = 'vibe';
@@ -32,9 +33,36 @@
   window.addEventListener('load', function () {
     // load 之後再等 100 毫秒，讓學習者程式裡的初始化跑完
     setTimeout(function () {
+      loaded = true;
       post({ type: 'ready' });
     }, 100);
   });
+
+  // 迴圈保護（docs/CONTRACT.md B3）：學習者的每個迴圈在送進來之前，已經被改寫成每跑一圈先呼叫 __vlLoop()（guard-loops.ts）。
+  // 一次不間斷的執行（一個「任務」，中間沒有讓出給瀏覽器）如果在迴圈裡已經跑超過 1 秒，就丟出錯誤把它中止。
+  // 不然跑它的瀏覽器程序會一直空轉，而且同一頁所有沙箱 iframe 共用同一個程序，
+  // 一個卡住，整頁的預覽和檢查都會跟著卡死，要重新整理頁面才會恢復。
+  // 計時用「任務」而不是「單一迴圈」：巢狀迴圈、或把錯誤吞掉的 try/catch，都躲不掉。
+  // 任務結束的訊號用 MessageChannel：背景分頁裡的 setTimeout 會被拉長，MessageChannel 不會。
+  var LOOP_LIMIT_MS = 1000;
+  var taskStart = 0;
+  var boundary = typeof MessageChannel === 'function' ? new MessageChannel() : null;
+  function resetTask() {
+    taskStart = 0;
+  }
+  if (boundary) boundary.port1.onmessage = resetTask;
+  window.__vlLoop = function () {
+    var now = Date.now();
+    if (taskStart === 0) {
+      taskStart = now;
+      if (boundary) boundary.port2.postMessage(0);
+      else setTimeout(resetTask, 0);
+      return;
+    }
+    if (now - taskStart > LOOP_LIMIT_MS) {
+      throw new Error('迴圈跑太久了，已經中止。是不是寫成了永遠不會結束的迴圈？');
+    }
+  };
 
   function sleep(ms) {
     return new Promise(function (resolve) {
@@ -68,22 +96,22 @@
   // 把「寫在檢查規則裡的樣式值」換算成瀏覽器實際會算出的值：
   // 在暫時的探針元素上設定看看，再讀它算出來的樣式。
   // 這樣 lightyellow、#ffffe0、rgb(255,255,224) 會得到同一個值。
-  var probe = null;
+  // 探針用完立刻拿掉：留在 body 裡的話，同一個 case 後面的檢查（選擇器是 span、body > *、:last-child 之類）會被它影響。
+  // 注意：百分比這類跟外層有關的長度，在探針上算出來的值會和目標元素不同，檢查規則不要用（約定 3.3）。
   function computedFor(property, value) {
-    if (!probe) {
-      probe = document.createElement('span');
-      probe.style.cssText = 'position:absolute;visibility:hidden;pointer-events:none';
-      document.body.appendChild(probe);
-    }
-    probe.style.removeProperty(property);
+    var probe = document.createElement('span');
+    probe.style.cssText = 'position:absolute;visibility:hidden;pointer-events:none';
     probe.style.setProperty(property, value);
     if (probe.style.getPropertyValue(property) === '') {
       // 瀏覽器不認得這個值：不換算，照字面比
       return norm(value).toLowerCase();
     }
-    var computed = getComputedStyle(probe).getPropertyValue(property);
-    probe.style.removeProperty(property);
-    return norm(computed).toLowerCase();
+    (document.body || document.documentElement).appendChild(probe);
+    try {
+      return norm(getComputedStyle(probe).getPropertyValue(property)).toLowerCase();
+    } finally {
+      probe.remove();
+    }
   }
 
   async function runStep(step) {
@@ -156,7 +184,13 @@
   window.addEventListener('message', function (event) {
     if (event.source !== parentWin) return;
     var data = event.data;
-    if (!data || data.source !== 'vibe' || data.type !== 'run') return;
+    if (!data || data.source !== 'vibe') return;
+    // 預覽的看門狗：父頁每秒問一次，載入完成的頁面會回 ready。卡在無窮迴圈的頁面回不了，父頁就知道它卡住了
+    if (data.type === 'ping') {
+      if (loaded) post({ type: 'ready' });
+      return;
+    }
+    if (data.type !== 'run') return;
     (async function () {
       var steps = data.steps || [];
       for (var i = 0; i < steps.length; i++) await runStep(steps[i]);

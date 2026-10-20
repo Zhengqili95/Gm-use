@@ -40,6 +40,21 @@ describe('組 srcdoc', () => {
     assert.ok(html.includes('var price = "$&";'));
   });
 
+  it('學習者的 JavaScript 會先做迴圈保護：script.js 和 index.html 裡的 <script> 都是', () => {
+    const html = buildBody({
+      'index.html': '<script>for (;;);</script>\n<script src="script.js"></script>',
+      'script.js': 'while (true) {}',
+    });
+    assert.ok(html.includes('<script>for (;;){__vlLoop();;}</script>'));
+    assert.ok(html.includes('<script>while (true) {__vlLoop();}</script>'));
+    assert.equal((html.match(/__vlLoop\(/g) ?? []).length, 2, '每個迴圈剛好一個呼叫：內嵌進來的 script.js 不會被保護第二次');
+  });
+
+  it('語法有錯的 script.js 原樣放進去（瀏覽器自己會報錯）', () => {
+    const html = buildBody({ 'index.html': '<script src="script.js"></script>', 'script.js': 'while (' });
+    assert.ok(html.includes('<script>while (</script>'));
+  });
+
   it('沒有提供的檔案：標籤原樣保留', () => {
     const html = buildBody({ 'index.html': '<link rel="stylesheet" href="style.css">' });
     assert.ok(html.includes('<link'));
