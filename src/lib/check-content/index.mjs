@@ -23,6 +23,12 @@ const pageSchema = lessonFrontmatter.required().extend({ ...starlightFields, dra
 const draftSchema = lessonFrontmatter.extend({ ...starlightFields, draft: z.literal(true) });
 const slash = p => p.split(path.sep).join('/');
 const clean = value => String(value).replace(/[\r\n\u2028\u2029]+/g, ' ');
+// Contract 1.2.2: bold that did not take effect. CommonMark does not close a `**` when the
+// character before it is punctuation (for example a full-width parenthesis) and the one after
+// it is a letter, so the page would show the asterisks as they are. After parsing, those
+// asterisks stay in a text node. Code blocks and inline code are other node types, so they are
+// not reported; an escaped `\*\*` was written on purpose and is not reported either.
+const unparsedBold = /(?<!\\)\*\*/g;
 
 function yaml(text) {
   const doc = parseDocument(text, { uniqueKeys: true });
@@ -172,10 +178,24 @@ export async function checkContent(root) {
       if (!dataFiles.has(id)) report(file, '引用的內容檔不存在：' + id);
     }
     const actual = { Exercise: [], Quiz: [] };
+    const body = source.slice(fm[0].length);
+    const frontmatterLines = (fm[0].match(/\n/g) ?? []).length; // body line 1 is file line frontmatterLines + 1
     let tree;
-    try { tree = await mdxToMdast(source.slice(fm[0].length)); }
+    try { tree = await mdxToMdast(body); }
     catch (e) { report(file, 'MDX 解析失敗：' + e.message); continue; }
     function visit(node) {
+      if (node.type === 'text') {
+        // The source text of the node (offsets are UTF-16, like JS strings), so a deliberate \*\* can be told apart.
+        const raw = node.position ? body.slice(node.position.start.offset, node.position.end.offset) : String(node.value);
+        const marks = [...raw.matchAll(unparsedBold)];
+        if (marks.length) {
+          const at = marks[0].index;
+          const line = frontmatterLines + (node.position?.start.line ?? 1) + (raw.slice(0, at).match(/\n/g) ?? []).length;
+          report(file, '第 ' + line + ' 行有 ' + marks.length + ' 個沒生效的 **（沒有變成粗體）：「' + raw.slice(Math.max(0, at - 6), at + 26) + '」。' +
+            '結尾的 ** 前面是標點（例如全形括號）、後面又緊接文字時，不算結尾；粗體只包住詞本身，例如 **HTML**（超文本標記語言）管…。' +
+            '要顯示星號本身的話，放進行內程式碼，或寫成 \\*\\*。');
+        }
+      }
       if (['mdxJsxFlowElement', 'mdxJsxTextElement'].includes(node.type) &&
           ['Exercise', 'Quiz', 'Diagram'].includes(node.name)) {
         const attr = name => {

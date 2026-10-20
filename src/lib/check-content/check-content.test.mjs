@@ -212,6 +212,95 @@ test('同一課兩張圖用同一個 id 會報錯，不同課的圖可以', asyn
   assert.deepEqual(errors, []);
 });
 
+// ---- 約定 1.2.2：沒生效的粗體 ----
+// CommonMark 不認結尾前面是標點（全形括號）、後面緊接文字的 **，網頁上會直接顯示 **。
+// 第 1 課 Gemini 的原稿開場就是這樣寫（T-010 整合時看畫面才發現）。
+const brokenBold = '網頁的三種語言分工：**HTML（超文本標記語言）**管畫面上「有什麼」、**CSS（階層樣式表）**管它們「長什麼樣子」。';
+const goodBold = '網頁的三種語言分工：**HTML**（超文本標記語言）管畫面上「有什麼」、**CSS**（階層樣式表）管它們「長什麼樣子」。';
+const withText = (text) => validBody + '\n' + text + '\n';
+const boldErrors = async (f) => (await checkContent(f.root)).filter(e => /沒生效/.test(e.reason));
+const lineNumbers = (errors) => errors.map(e => Number(e.reason.match(/^第 (\d+) 行/)[1]));
+// 檔案裡第一個包含 needle 的那一行（從 1 算）
+const lineOf = (f, needle) => f.get(lessonFile).split(/\r?\n/).findIndex(line => line.includes(needle)) + 1;
+test('粗體只包住詞本身：寫法正確的粗體不報錯', async (t) => {
+  const f = fixture(t); f.front(() => {}, withText(goodBold));
+  assert.deepEqual(await checkContent(f.root), []);
+});
+test('結尾的 ** 前面是全形括號、後面緊接中文字：沒生效，報出行號、個數和那段文字', async (t) => {
+  const f = fixture(t); f.front(() => {}, withText(brokenBold));
+  const errors = await boldErrors(f);
+  assert.equal(errors.length, 1, JSON.stringify(errors));
+  assert.ok(errors[0].file.includes(lessonFile));
+  assert.match(errors[0].reason, new RegExp('^第 ' + lineOf(f, '**HTML（') + ' 行有 4 個沒生效的 \\*\\*'));
+  assert.ok(errors[0].reason.includes('**HTML（超文本'), '要附上有問題的那段文字：' + errors[0].reason);
+  assert.match(errors[0].reason, /粗體只包住詞本身/);
+});
+test('第 1 課 Gemini 原稿的開場（三組粗體都沒生效）：一段報一項，個數是 6', async (t) => {
+  const f = fixture(t);
+  f.front(() => {}, withText('網頁檔案裡最重要的就是三種語言的分工：**HTML（超文本標記語言）**管畫面上「有什麼」、**CSS（階層樣式表）**管它們「長什麼樣子」、**JavaScript（網頁用的程式語言）**管「按下去會怎樣」。這課結束時，你會親手用這三種語言，做出一張卡片。'));
+  const errors = await boldErrors(f);
+  assert.equal(errors.length, 1, JSON.stringify(errors));
+  assert.match(errors[0].reason, /^第 \d+ 行有 6 個沒生效的/);
+});
+test('結尾的 ** 前面是標點、但後面也是標點（全形冒號）：粗體有生效，不報錯', async (t) => {
+  const f = fixture(t);
+  f.front(() => {}, withText('1. **選擇器（selector）**：大括號前面的 `.card` 就是選擇器。\n2. **CSS 屬性（property）與值**：每一行都用「屬性: 值;」的格式。\n3. **大部分標籤是成對的**：例如 `<h2>`。'));
+  assert.deepEqual(await checkContent(f.root), []);
+});
+test('行內程式碼、程式碼區塊、MDX 註解裡的 **，和作者特地跳脫的 \\*\\*，都不報錯', async (t) => {
+  const f = fixture(t);
+  f.front(() => {}, withText('用 `**` 包住的是粗體。\n\n```css\n/* ** 註解 ** */\n.card { color: red; }\n```\n\n{/* ** 註解 ** */}\n\n要顯示兩個星號，寫成 \\*\\*。\n\n乘號 3 * 4 和單獨的 * 也不是粗體。'));
+  assert.deepEqual(await checkContent(f.root), []);
+});
+test('跳脫的星號後面又緊接一顆星（\\**）：兩顆星之間沒有粗體的意思，不報錯', async (t) => {
+  const f = fixture(t); f.front(() => {}, withText('星號 \\** 在這裡，第一顆是跳脫的。'));
+  assert.deepEqual(await checkContent(f.root), []);
+  // 前面多一個反斜線（\\ 是反斜線本身）時，後面的 ** 是真的標記；這種寫法太冷門，不處理，也不保證會報
+});
+test('清單、表格、提示框裡沒生效的粗體也要報，每一處各報一項，行號各自對得上', async (t) => {
+  const f = fixture(t);
+  f.front(() => {}, withText([
+    '1. **清單（說明）**接中文',
+    '',
+    '| 詞 | 說明 |',
+    '|---|---|',
+    '| **表格（說明）**接中文 | x |',
+    '',
+    '<Aside type="tip" title="提示">',
+    '',
+    '- **提示框（說明）**接中文',
+    '',
+    '</Aside>',
+  ].join('\n')));
+  const errors = await boldErrors(f);
+  assert.deepEqual(lineNumbers(errors).sort((a, b) => a - b), [lineOf(f, '**清單（'), lineOf(f, '**表格（'), lineOf(f, '**提示框（')]);
+});
+test('同一段的第二行才有壞的粗體：行號指到那一行，不是段落的第一行', async (t) => {
+  const f = fixture(t);
+  f.front(() => {}, withText('這一段的第一行沒有問題，\n第二行才有：**詞（說明）**接中文，\n第三行也沒問題。'));
+  assert.deepEqual(lineNumbers(await boldErrors(f)), [lineOf(f, '第二行才有')]);
+});
+test('同一行前面有 emoji（UTF-16 兩個單位）、檔案是 CRLF 換行：行號和附上的文字照樣對', async (t) => {
+  const f = fixture(t);
+  f.front(() => {}, withText('開頭\n\n😀😀 你好：**詞（說明）**接中文'));
+  const expected = lineOf(f, '😀😀');
+  f.put(lessonFile, f.get(lessonFile).replace(/\r?\n/g, '\r\n'));
+  const errors = await boldErrors(f);
+  assert.equal(errors.length, 1, JSON.stringify(errors));
+  assert.match(errors[0].reason, new RegExp('^第 ' + expected + ' 行有 2 個'));
+  assert.ok(errors[0].reason.includes('**詞（說明）**接中'), errors[0].reason);
+});
+test('草稿課文也檢查沒生效的粗體', async (t) => {
+  const f = fixture(t);
+  f.front((v) => { v.draft = true; v.gates = { sources: false, review: false, trial: false }; }, withText(brokenBold));
+  assert.equal((await boldErrors(f)).length, 1);
+});
+test('frontmatter 不讀成 Markdown：欄位裡的 ** 不在這條檢查的範圍', async (t) => {
+  const f = fixture(t);
+  f.front((v) => { v.oneThing = '**HTML（超文本標記語言）**管結構'; }, withText(goodBold));
+  assert.deepEqual(await boldErrors(f), []);
+});
+
 const invalid = [
   ['練習版本', f => f.data(exerciseFile, v => { v.contract = 99; }), exerciseFile, /contract/],
   ['練習 id 對應路徑', f => f.data(exerciseFile, v => { v.id = 'lesson-2/ex-1'; }), exerciseFile, /id/],
