@@ -1,0 +1,26 @@
+# 預期：✗ 標準答案執行時出錯（檢查都過了，但標準答案後半段打錯字，M-063 建議 1）
+contract: 1
+id: lesson-1/ex-7
+type: preview
+title: "標準答案後半段有錯"
+goal: "把標題改成「完成」"
+minutes: 2
+files:
+  index.html: |
+    <h2 id="title">寫一封請假信</h2>
+    <script src="script.js"></script>
+  script.js: |
+    // 在這裡改標題
+editable: [script.js]
+solution:
+  script.js: |
+    document.getElementById("title").textContent = "完成";
+    documnet.title = "完成";
+checks:
+  - id: title-text
+    type: text
+    selector: "#title"
+    equals: "完成"
+    hint: "改 textContent。"
+hints: ["一", "二", "三"]
+success: "好"

@@ -30,11 +30,12 @@ test('故意寫錯的練習都抓得到，無窮迴圈也不會卡住整個測�
 		/^✗ lesson-1\/ex-4 {2}起始內容就通過全部檢查/,
 		/^✗ lesson-1\/ex-5 {2}格式不對：沒有 solution/,
 		/^✗ lesson-1\/ex-6 {2}YAML 讀不懂：/,
+		/^✗ lesson-1\/ex-7 {2}標準答案執行時出錯：.*documnet/,
 		/^－ lesson-2\/ex-1 {2}略過：api/,
 		/^－ lesson-3\/ex-1 {2}略過：sql/,
 		/^✓ lesson-10\/ex-1 {2}標準答案全過；起始內容沒過：msg-text$/,
 		/^$/,
-		/^通過 2 個、沒過 5 個、略過 2 個（略過的不算通過）$/,
+		/^通過 2 個、沒過 6 個、略過 2 個（略過的不算通過）$/,
 	];
 	assert.equal(lines.length, expected.length, result.stdout);
 	expected.forEach((pattern, index) => assert.match(lines[index], pattern));
@@ -49,11 +50,14 @@ test('只跑指定的練習；全部通過時回傳 0', () => {
 	assert.doesNotMatch(result.stdout, /lesson-1\/ex-1/);
 });
 
-test('沒有符合的練習、或資料夾不存在時回傳 1', () => {
+test('沒有符合的練習、資料夾不存在、或 --dir 沒給值時回傳 1', () => {
 	const none = runOn(['--dir', join(here, 'fixtures'), 'lesson-99']);
 	assert.equal(none.status, 1);
 	assert.match(none.stdout, /找不到符合 lesson-99 的練習/);
 	const missing = runOn(['--dir', join(here, 'no-such-folder')]);
 	assert.equal(missing.status, 1);
 	assert.match(missing.stdout, /找不到練習資料夾/);
+	const noValue = runOn(['--dir']);
+	assert.equal(noValue.status, 1);
+	assert.match(noValue.stderr, /--dir 後面要給練習資料夾的路徑/);
 });

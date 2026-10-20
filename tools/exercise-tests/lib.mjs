@@ -65,6 +65,8 @@ export function shapeProblem(data) {
  * 判斷一個練習：標準答案要通過全部檢查，起始內容要至少一條沒過。
  * start、solved 是檢查執行器的結果：{ passed: { 檢查 id: 是否通過 }, errors: [], timedOut }。
  * 「過關」和畫面的判斷一樣：每一條檢查都通過，逾時的檢查算沒過。
+ * 標準答案執行時出錯，就算檢查都過了也算有問題：標準答案不該出錯，這幾乎一定是練習的 bug（M-063）。
+ * 起始內容出錯是正常的，不用管。
  */
 export function judge(checks, start, solved) {
 	const ids = checks.map((check) => check.id);
@@ -76,6 +78,8 @@ export function judge(checks, start, solved) {
 		if (solved.timedOut) text += '（執行逾時）';
 		if (solved.errors.length > 0) text += `（程式錯誤：${solved.errors[0]}）`;
 		problems.push(text);
+	} else if (solved.errors.length > 0) {
+		problems.push(`標準答案執行時出錯：${solved.errors[0]}`);
 	}
 	if (startFailed.length === 0) problems.push('起始內容就通過全部檢查，學習者不用改就過關');
 	if (problems.length > 0) return { ok: false, text: problems.join('；') };
