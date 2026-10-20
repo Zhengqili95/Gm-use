@@ -14,8 +14,21 @@ export interface ExerciseProgress {
   updatedAt: string; // ISO 時間
 }
 
+export interface QuizAnswer {
+  firstTryCorrect: boolean; // 第一次點就點對（只有這種才得分）
+  tries: number; // 答對之前點過幾個不同的選項（含答對的那一次）
+  done: boolean; // 這一題已經答對
+  picked?: number[]; // 點過的選項，依先後，用「選項在檔案裡的原始位置」記錄（B6），所以選項怎麼打亂都對得上
+}
+
 export interface QuizProgress {
-  answers: Record<string, { firstTryCorrect: boolean; tries: number; done: boolean }>;
+  answers: Record<string, QuizAnswer>;
+}
+
+// 一課要做完的東西：課文 frontmatter 的 exercises，加上測驗裡每一題的 id
+export interface LessonSpec {
+  exercises: string[];
+  questions: string[];
 }
 
 export interface LessonProgress {
@@ -120,11 +133,7 @@ export function updateExercise(exerciseId: string, patch: Partial<ExerciseProgre
   return next;
 }
 
-export function updateQuiz(
-  lessonId: string,
-  questionId: string,
-  patch: Partial<QuizProgress['answers'][string]>,
-): void {
+export function updateQuiz(lessonId: string, questionId: string, patch: Partial<QuizAnswer>): void {
   const state = load();
   const lesson = state.lessons[lessonId] ?? { exercises: {} };
   const quiz = lesson.quiz ?? { answers: {} };
@@ -136,6 +145,46 @@ export function updateQuiz(
       [lessonId]: { ...lesson, quiz: { answers: { ...quiz.answers, [questionId]: { ...previous, ...patch } } } },
     },
   });
+}
+
+// 讀某一課測驗的答題紀錄。localStorage 的內容可能被改壞，所以每一筆都檢查過才交出去：
+// 格式不對的整筆丟掉，picked 只留非負整數（而且不重複）。
+export function readQuizAnswers(state: ProgressState, lessonId: string): Record<string, QuizAnswer> {
+  const raw = state.lessons[lessonId]?.quiz?.answers;
+  const answers: Record<string, QuizAnswer> = {};
+  if (!isRecord(raw)) return answers;
+  for (const [questionId, entry] of Object.entries(raw)) {
+    if (!isRecord(entry)) continue;
+    const answer: QuizAnswer = {
+      firstTryCorrect: entry.firstTryCorrect === true,
+      tries: typeof entry.tries === 'number' && Number.isInteger(entry.tries) && entry.tries >= 0 ? entry.tries : 0,
+      done: entry.done === true,
+    };
+    if (Array.isArray(entry.picked)) {
+      answer.picked = [...new Set(entry.picked.filter((n): n is number => typeof n === 'number' && Number.isInteger(n) && n >= 0))];
+    }
+    answers[questionId] = answer;
+  }
+  return answers;
+}
+
+// ---------- 「一課完成」的判斷（B7） ----------
+
+// 練習算完成：過關（passed），或看過答案之後過關（revealed）
+export function isExerciseDone(progress: ExerciseProgress | undefined): boolean {
+  return progress?.status === 'passed' || progress?.status === 'revealed';
+}
+
+// 一課完成：課文 frontmatter 的 exercises 裡每個練習都完成，而且測驗每一題都答對（done）。
+// 沒有練習或沒有測驗題目的課（還沒做好的佔位頁）不算完成，不然「每一個都完成」會在空的清單上成立。
+export function isLessonDone(state: ProgressState, lessonId: string, spec: LessonSpec): boolean {
+  if (spec.exercises.length === 0 || spec.questions.length === 0) return false;
+  const lesson = state.lessons[lessonId];
+  const answers = readQuizAnswers(state, lessonId);
+  return (
+    spec.exercises.every((id) => isExerciseDone(lesson?.exercises?.[id])) &&
+    spec.questions.every((id) => answers[id]?.done === true)
+  );
 }
 
 // 進度有改動時通知；回傳取消訂閱的函式
