@@ -1,0 +1,4 @@
+# 預期：－ 略過（sql 還不支援）
+contract: 1
+id: lesson-3/ex-1
+type: sql

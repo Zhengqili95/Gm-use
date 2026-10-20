@@ -1,0 +1,29 @@
+# 預期：✗ 標準答案沒過：after-click（執行逾時）——按下按鈕後進入無窮迴圈，不能卡住整個測試（驗收第 3 點）
+contract: 1
+id: lesson-1/ex-2
+type: preview
+title: "按下去就停不下來"
+goal: "讓按鈕被按下去以後，文字變成「★ 已收藏」"
+minutes: 2
+files:
+  index.html: |
+    <button id="fav" type="button">☆ 收藏</button>
+    <script src="script.js"></script>
+  script.js: |
+    // 還沒寫
+editable: [script.js]
+solution:
+  script.js: |
+    document.getElementById("fav").addEventListener("click", function () {
+      while (true) {}
+    });
+checks:
+  - id: after-click
+    type: text
+    selector: "#fav"
+    equals: "★ 已收藏"
+    steps:
+      - click: "#fav"
+    hint: "看 click 事件。"
+hints: ["一", "二", "三"]
+success: "好"

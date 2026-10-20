@@ -9,10 +9,11 @@
     "preview": "astro preview",
     "astro": "astro",
     "test:schemas": "node --test src/lib/schemas.test.mjs",
-    "test": "node --test \"src/**/*.test.mjs\"",
+    "test": "node --test \"src/**/*.test.mjs\" \"tools/**/*.test.mjs\"",
     "check": "astro check",
     "check:content": "node src/lib/check-content/cli.mjs",
-    "test:check": "node --test src/lib/check-content/check-content.test.mjs"
+    "test:check": "node --test src/lib/check-content/check-content.test.mjs",
+    "test:exercises": "node tools/exercise-tests/run.mjs"
   },
   "dependencies": {
     "@astrojs/preact": "^6.1.0",
@@ -27,6 +28,7 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.10",
+    "@playwright/test": "^1.64.1",
     "saxes": "^6.0.0",
     "typescript": "^6.0.3",
     "yaml": "^2.9.1"

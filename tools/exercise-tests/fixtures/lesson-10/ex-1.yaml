@@ -1,0 +1,22 @@
+# 預期：✓ 正常的練習；排在 lesson-3 後面（依號碼排序，不是依字母）
+contract: 1
+id: lesson-10/ex-1
+type: preview
+title: "正常的練習"
+goal: "把字改成「再見」"
+minutes: 1
+files:
+  index.html: |
+    <p id="msg">你好</p>
+editable: [index.html]
+solution:
+  index.html: |
+    <p id="msg">再見</p>
+checks:
+  - id: msg-text
+    type: text
+    selector: "#msg"
+    equals: "再見"
+    hint: "改字。"
+hints: ["一", "二", "三"]
+success: "好"
