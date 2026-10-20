@@ -1,0 +1,25 @@
+# 預期：✓ 標準答案全過；起始內容沒過：title-text（起始內容執行逾時）——起始內容一載入就卡住，但不是迴圈（正規表示式的災難性回溯），迴圈保護攔不到；之後的檢查不能受影響
+contract: 1
+id: lesson-1/ex-9
+type: preview
+title: "一打開就卡在正規表示式"
+goal: "把標題改成「完成」"
+minutes: 2
+files:
+  index.html: |
+    <h2 id="title">寫一封請假信</h2>
+    <script src="script.js"></script>
+  script.js: |
+    /(a+)+b/.test("a".repeat(60));
+editable: [script.js]
+solution:
+  script.js: |
+    document.getElementById("title").textContent = "完成";
+checks:
+  - id: title-text
+    type: text
+    selector: "#title"
+    equals: "完成"
+    hint: "改 textContent。"
+hints: ["一", "二", "三"]
+success: "好"

@@ -1,0 +1,29 @@
+# 預期：✗ 標準答案沒過：after-click（執行逾時）——按下按鈕後卡住，但不是迴圈（正規表示式的災難性回溯），迴圈保護攔不到；要靠逾時和重開瀏覽器（驗收第 3 點）
+contract: 1
+id: lesson-1/ex-8
+type: preview
+title: "按下去卡在正規表示式"
+goal: "讓按鈕被按下去以後，文字變成「★ 已收藏」"
+minutes: 2
+files:
+  index.html: |
+    <button id="fav" type="button">☆ 收藏</button>
+    <script src="script.js"></script>
+  script.js: |
+    // 還沒寫
+editable: [script.js]
+solution:
+  script.js: |
+    document.getElementById("fav").addEventListener("click", function () {
+      /(a+)+b/.test("a".repeat(60));
+    });
+checks:
+  - id: after-click
+    type: text
+    selector: "#fav"
+    equals: "★ 已收藏"
+    steps:
+      - click: "#fav"
+    hint: "看 click 事件。"
+hints: ["一", "二", "三"]
+success: "好"
