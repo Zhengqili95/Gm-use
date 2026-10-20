@@ -209,7 +209,7 @@ import { Aside, Steps } from '@astrojs/starlight/components';
 | `exists` | preview、api | `selector`；`count`（可省略） | 找得到元素。`count` 可以寫整數（剛好幾個），或 `{ min: 1, max: 3 }`（`min`、`max` 至少寫一個，而且 `min` 不能大於 `max`；`request` 的 `times` 也是同樣的寫法） |
 | `text` | preview、api | `selector`；`equals`、`includes`、`matches` 三選一；`all`、`ignoreCase`（可省略） | 元素的文字符合。比對前會把連續空白壓成一個空格並去掉頭尾。`matches` 是規則運算式（不用寫斜線和旗標）。預設看第一個符合的元素，`all: true` 則每一個都要符合 |
 | `attr` | preview、api | `selector`、`name`；`equals`、`includes`、`matches`、`present` 四選一 | 屬性值符合（比對前和 `text` 一樣，先把連續空白壓成一個空格）；`present: true` 表示有這個屬性就好，`present: false` 表示不能有這個屬性 |
-| `style` | preview、api | `selector`、`property`；`equals` 或 `oneOf` 二選一 | 瀏覽器實際算出來的樣式符合。顏色可以寫名稱、`#hex`、`rgb()`，會先統一換算再比；長度會換算成 px |
+| `style` | preview、api | `selector`、`property`；`equals` 或 `oneOf` 二選一 | 瀏覽器實際算出來的樣式符合。顏色可以寫名稱、`#hex`、`rgb()`，會先統一換算再比；長度會換算成 px。**不要用百分比（`50%`）、`auto` 這類要看外層才算得出來的值**，換算出來的會和目標元素不同 |
 | `noError` | preview、api | — | 載入和 `steps` 期間，沒有未處理的 JavaScript 錯誤 |
 | `request` | api | `method`、`path`；`times`、`query`、`bodyIncludes`（可省略） | 學習者的程式送出了符合的請求。`times` 預設至少一次；`bodyIncludes` 只比對你寫出的欄位 |
 | `rows` | sql | `equals`；`columns`、`ordered`（可省略） | 學習者最後一個會回傳資料列的語句，結果符合。預設不管順序，要比順序就寫 `ordered: true` |
@@ -713,7 +713,7 @@ src/components/progress/                 進度元件
 src/components/lesson/Diagram.astro      圖解元件
 ```
 
-**`Diagram.astro`**：用 `import.meta.glob('/src/lessons/*/diagrams/*.svg', { query: '?raw', import: 'default', eager: true })` 取得 SVG 文字，直接內嵌進頁面（不用 `<img>`，`var(--sl-color-…)` 才會套用到頁面的主題）。外框是 `<figure>`，`max-width: 32rem` 並置中，SVG 本身 `width: 100%; height: auto`；`alt` 放在外框的 `role="img"` 和 `aria-label`；`caption` 可省略。第 5 節的範例圖我已經放進 Claude-A 的外殼實際看過，深色和淺色模式都清楚。
+**`Diagram.astro`**：用 `import.meta.glob('/src/lessons/*/diagrams/*.svg', { query: '?raw', import: 'default', eager: true })` 取得 SVG 文字，直接內嵌進頁面（不用 `<img>`，`var(--sl-color-…)` 才會套用到頁面的主題）。外框是 `<figure>`，`max-width: 32rem` 並置中，SVG 本身 `width: 100%; height: auto`；`alt` 放在圖外面一層 `<div>` 的 `role="img"` 和 `aria-label`（不放在 `<figure>` 上，這樣 `<figcaption>` 還是讀得到）；`caption` 可省略。第 5 節的範例圖我已經放進 Claude-A 的外殼實際看過，深色和淺色模式都清楚。
 
 `src/content.config.ts` 只負責接線（外殼 commit 之後，由 T-005 的 branch 接上；Claude-A 在 M-022 同意）：
 
@@ -752,7 +752,8 @@ todo ──(檢查沒過)──▶ attempted ──(檢查過了)──▶ passe
 - `passed` 和 `revealed` 都算完成；`revealed` 在進度裡另外標示。
 - 檢查**逾時**也算一次沒通過，不然學習者卡在無窮迴圈時，永遠等不到「看答案」。
 - **還原**：重新整理後，等元件水合（hydrate）完成，才把儲存的程式碼和進度讀回來，這樣才不會和伺服器端渲染出來的內容對不起來。
-- **自動存檔**：編輯後 300 ms 把目前的檔案存進進度儲存（B7），執行前也存一次。學習者的程式碰到無窮迴圈時，頁面可能卡住，重新整理就能恢復，而且程式碼不會丟。（第一版不做迴圈保護。）
+- **自動存檔**：編輯後 300 ms 把目前的檔案存進進度儲存（B7），執行前也存一次，所以重新整理之後程式碼不會丟。
+- **無窮迴圈**：學習者的迴圈如果一次跑超過 1 秒，會被迴圈保護中止（B3）；預覽每次更新都換一個新的 iframe；預覽一直沒有回應時，顯示提示和「重新整理頁面」按鈕。
 
 **手機**：編輯區用 `<textarea>`（`spellcheck="false"`、`autocapitalize="off"`、`autocorrect="off"`，字體至少 16px 避免 iOS 自動放大），預覽區疊在編輯區下面，按鈕要夠大。第一版不用 CodeMirror 或 Monaco（太重，手機也不好用）。
 
@@ -766,14 +767,20 @@ todo ──(檢查沒過)──▶ attempted ──(檢查過了)──▶ passe
 | 方向 | 訊息 |
 |---|---|
 | 父頁 → iframe | `{ source: 'vibe', type: 'run', steps, checks }`：一個 case |
+| 父頁 → iframe | `{ source: 'vibe', type: 'ping' }`：預覽的看門狗；載入完成的頁面回一則 `ready` |
 | iframe → 父頁 | `{ source: 'vibe', type: 'ready' }`：`load` 事件之後再等 100 ms |
 | iframe → 父頁 | `{ source: 'vibe', type: 'result', results: [{ id, passed }], requests, errors }` |
 
   sandbox 的 iframe 來源是字串 `"null"`，沒辦法比對來源網址，所以父頁用 `event.source === iframe.contentWindow` 確認，iframe 用 `event.source === window.parent` 確認。
 - **case**：`steps` 完全相同的檢查合成一個 case；每個 case 都從重新載入的 iframe 開始。單一 case 逾時 3 秒，逾時就讓這個 case 的檢查全部失敗並顯示「程式執行太久」。沒有 steps 的 case 逾時（程式一載入就停不下來），後面的 case 直接算失敗，不再各等一次逾時。
-- **`style` 比對**：建一個暫時的探針元素，把檢查的 `equals` 值設上去，讀它算出來的樣式，再和目標元素算出來的樣式比；這樣 `lightyellow`、`#ffffe0`、`rgb(255,255,224)` 都會算成同一個值。
+- **`style` 比對**：建一個暫時的探針元素，把檢查的 `equals` 值設上去，讀它算出來的樣式，再和目標元素算出來的樣式比；這樣 `lightyellow`、`#ffffe0`、`rgb(255,255,224)` 都會算成同一個值。探針用完立刻拿掉（留在頁面裡會影響同一個 case 後面的檢查）。百分比這類要看外層才算得出來的值（`width: 50%`），在探針上算出來的會和目標元素不同，檢查規則不要用（3.3）。
 - **`noError`**：執行器在學習者的程式之前先掛上 `error` 和 `unhandledrejection` 的監聽。
-- **已在 Chromium 實測**（2026-10-19，T-009）：沙箱裡的程式碰 `parent.document`、`localStorage`、`document.cookie`、`top.location` 全部丟 `SecurityError`；`fetch`（含 `no-cors`）和 XMLHttpRequest 連外部網址都被擋住；預覽 iframe 跑 `while (true) {}` 時，父頁計時器的最大延遲只有 63 毫秒（設定的間隔是 50 毫秒），逾時機制正常運作。Firefox 和 Safari 還沒測，所以 B2 的「自動存檔」那條保留。
+- **結果驗證**：父頁收到 `result` 時不照單全收（學習者的程式和執行器在同一個 iframe，什麼訊息都可能送出來）：只接受這個 case 的檢查 id，格式不對或沒回報的檢查算沒通過，錯誤訊息最多 5 則、每則最多 300 字（`sanitize-result.ts`）。
+- **迴圈保護**（`guard-loops.ts`、`iframe-runner.js` 的 `__vlLoop`）：組 `srcdoc` 時，用語法解析器（acorn）把學習者的 `script.js` 和 `index.html` 裡直接寫的 `<script>` 裡的每個迴圈（`while`、`do…while`、`for`、`for…in`、`for…of`）改寫成每跑一圈先呼叫一次 `__vlLoop()`；沒有大括號的本體會補上大括號。`__vlLoop` 在同一個任務（一次不間斷的執行，中間沒讓出給瀏覽器）裡累計超過 1 秒，就丟出「迴圈跑太久了，已經中止…」的錯誤，所以：預覽和檢查不會卡住，`noError` 會看到這個錯誤，畫面會顯示專用的訊息。語法有錯的程式照原樣交出去（本來就跑不起來）。任務結束的訊號用 `MessageChannel`（背景分頁裡的 `setTimeout` 會被拉長）。**練習的標準答案不要寫一次跑超過 1 秒的迴圈。**
+- **為什麼要有迴圈保護**（2026-10-20 在 Playwright 的 Edge 實測）：沒辦法從網頁裡中止一個卡住的沙箱 iframe；把它從 DOM 拿掉，跑它的瀏覽器程序還是一直吃 CPU，要關掉分頁才會停；**而且同一頁所有 `sandbox` 的 `srcdoc` iframe 共用同一個程序**（直接量過：加 3 個沙箱 iframe，renderer 程序只多 1 個；其中一個卡住，就是那一個程序在吃 CPU）：一個練習卡在無窮迴圈，同一頁其他練習的預覽也都沒有回應，之後新建的 iframe（包含所有「檢查」）也一樣，換新的 iframe、先拿掉舊的再建新的都救不了，只有重新整理頁面才會恢復。有了迴圈保護，一般的無窮迴圈一秒內就被中止，不會發生這些事。
+- **預覽的更新和看門狗**：預覽每次更新都換一個新的 iframe（`key`），不在同一個 iframe 上換 `srcdoc`。父頁每秒對預覽 iframe 送一次 `ping`（`{ source: 'vibe', type: 'ping' }`），載入完成的頁面回 `ready`；5 秒內沒有回，就顯示「預覽沒有回應」和「重新整理頁面」按鈕。伺服器端渲染的 iframe 在元件啟動之前就載入完了，錯過它自己送的 `ready`，所以要靠 `ping`。
+- **已在 Chromium 實測**（2026-10-19、20，T-009）：沙箱裡的程式碰 `parent.document`、`localStorage`、`document.cookie`、`top.location` 全部丟 `SecurityError`；`fetch`（含 `no-cors`）和 XMLHttpRequest 連外部網址都被擋住；沒有迴圈保護時，預覽 iframe 跑 `while (true) {}`，父頁計時器的最大延遲只有 63 毫秒（設定的間隔是 50 毫秒），所以父頁和編輯區不受影響。Firefox 和 Safari 還沒測。
+- **已知限制**：(1) 學習者的程式和執行器在同一個 iframe：可以偽造「通過」或關掉迴圈保護，只影響學習者自己，第一版接受。(2) 迴圈保護攔不到的卡住（不是迴圈造成的，例如正規表示式的災難性回溯 `/(a+)+b/`）還是會讓同一頁所有沙箱 iframe 卡死、一直吃 CPU：父頁、編輯區、按鈕不受影響，會看到「預覽沒有回應」的提示；「重新整理頁面」可以恢復，但存檔的程式碼會被還原回來，所以要先改好程式碼再重新整理。(3) 迴圈保護只認得 JavaScript 的迴圈語句，遞迴不用管（會丟堆疊溢位的錯誤）。
 - 之後可以加（不在第一版）：把學習者的 `console.log` 顯示在預覽下面。
 
 ## B4. 模擬伺服器（api）
@@ -888,6 +895,7 @@ interface LessonContext {
 - 練習和測驗元件用 `client:visible`，捲到才載入。第一版不引入大型編輯器。
 - 每課頁面的 JavaScript（不含 sql.js 和 WASM）目標 100 KB 以內（壓縮後）；sql.js 和 WASM 只在 SQL 練習進入畫面時才載入。
 - 所有按鈕在手機上至少 44 px 高；預覽區和編輯區上下排列。
+- 迴圈保護用的語法解析器 acorn，打包後約 113 KB、壓縮後約 34 KB，包在練習元件（preview、api）裡，所以只有有這種練習的頁面才會載入。實測（2026-10-20）：有練習的頁面，JavaScript 合計約 85 KB（壓縮後，含網站本身的 JavaScript），在 100 KB 的目標內；之後加測驗和進度元件時要留意剩下的 15 KB。
 
 ## B11. 預設做法（待 Claude-A 和使用者確認）
 
@@ -915,3 +923,4 @@ interface LessonContext {
 |---|---|---|
 | 1.0 草稿 | 2026-10-18 | 第一版：課程檔、練習（preview、api、sql）、測驗、圖解、進度與事件、建置檢查 |
 | 1.1 | 2026-10-19 | 照 T-009 的實測補充，都是補充或釐清，內容檔不用改：沙箱安全規則在 Chromium 的驗證結果、逾時的處理（逾時也算沒通過；沒有 steps 的 case 逾時，後面的 case 直接失敗）、`attr` 的空白處理和 `present: false`、進度儲存多了 `failedAttempts`、`revealShown`、`lastFailedCheck` 和 `getExercise`、`getContext()` 的細節 |
+| 1.1.1 | 2026-10-20 | T-009 收尾，都是實作備忘（第二部分）的補充，內容檔不用改：迴圈保護（同一頁的沙箱 iframe 共用一個瀏覽器程序，一個卡住整頁都壞掉，所以要在執行前中止無窮迴圈）、預覽每次更新換新的 iframe 和看門狗（ping）、結果驗證、探針用完拿掉、style 檢查不要用百分比、<Diagram> 的無障礙屬性放在內層、已知限制 |
