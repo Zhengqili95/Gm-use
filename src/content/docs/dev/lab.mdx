@@ -5,8 +5,9 @@ draft: true
 ---
 
 import Exercise from '../../../components/exercises/Exercise.astro';
+import Diagram from '../../../components/lesson/Diagram.astro';
 
-這一頁只有開發時看得到。下面的練習放在 `src/lessons/lesson-0/`，專門用來測試元件。
+這一頁只有開發時看得到。下面的練習放在 `src/lessons/lesson-0/`，專門用來測試元件。（`ex-4` 是給 `npm run test:exercises` 用的回歸測試，不顯示在這一頁。）
 
 ## 改文字（HTML）
 
@@ -19,3 +20,7 @@ import Exercise from '../../../components/exercises/Exercise.astro';
 ## 加上行為（JavaScript，用到 steps）
 
 <Exercise id="lesson-0/ex-3" />
+
+## 圖解
+
+<Diagram name="lesson-0/browser-server" alt="瀏覽器向伺服器送出請求，伺服器把網頁檔案送回來" caption="圖：瀏覽器向伺服器要檔案（開發用的範例圖）" />

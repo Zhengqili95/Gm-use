@@ -1,0 +1,18 @@
+/* <Diagram> 的版面（docs/CONTRACT.md B1）：最寬 32rem、置中；SVG 本身填滿寬度、高度跟著比例。 */
+.vl-diagram {
+  max-width: 32rem;
+  margin-inline: auto;
+}
+
+.vl-diagram svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.vl-diagram figcaption {
+  margin-top: 0.5rem;
+  font-size: var(--sl-text-sm);
+  text-align: center;
+  color: var(--sl-color-gray-3);
+}
