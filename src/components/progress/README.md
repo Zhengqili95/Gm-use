@@ -4,7 +4,7 @@
 
 | 檔案 | 內容 |
 |---|---|
-| `SidebarProgress.astro` | **每個課程頁的課文都要放一次**：`<SidebarProgress />`。它在建置時把每一課要做完的東西寫進頁面（`<script type="application/json" id="vl-lesson-manifest">`：每個練習的 id、測驗每一題的 id），再載入 `sidebar-progress.ts` |
+| `SidebarProgress.astro` | 放在 `src/components/layout/Sidebar.astro` 裡，每一頁的側邊欄都有，課文不用放。它在建置時把每一課要做完的東西寫進頁面（`<script type="application/json" id="vl-lesson-manifest">`：每個練習的 id、測驗每一題的 id），再載入 `sidebar-progress.ts` |
 | `sidebar-progress.ts` | 在瀏覽器裡執行：讀進度，更新 `[data-vl-progress-count]`、`[data-vl-progress-fill]`，在完成的課程連結（`nav.sidebar a`）加 `data-vl-done="true"`；進度有改動時（`vibe:progress` 事件，包含別的分頁改的）重畫 |
 | `sidebar-progress.test.mjs` | 課號從網址取出、哪幾課完成、清單的格式檢查，用 Node 直接測 |
 
@@ -14,17 +14,9 @@
 
 ## 新增一課時
 
-課文（`src/content/docs/lessons/lesson-N.mdx`）要照第 1 課的寫法：
+課文不用放 `<SidebarProgress />`：它已經在 `src/components/layout/Sidebar.astro` 裡（M-090），清單會自動算進新的課。課文裡再放一次的話，頁面上會有兩份清單。
 
-```mdx
-import SidebarProgress from '../../../components/progress/SidebarProgress.astro';
-
-<SidebarProgress />
-```
-
-漏了的話，這一頁的側邊欄不會更新（會一直是伺服器端寫的「0 / N 課」）。第 2、3 課的佔位頁已經放好了。
-
-> 另一種放法：在 `src/components/layout/Sidebar.astro` 裡放這個元件，每一頁都會有，課文就不用放。那個檔案是外殼（Claude-A）的，T-010 沒有動它，要不要改由 Claude-A 決定。
+要算得出這一課完成，課文 frontmatter 要有 `exercises` 和 `quiz`（見上面「一課完成」）。
 
 ## 驗證過的情況
 

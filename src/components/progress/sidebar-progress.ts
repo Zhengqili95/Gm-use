@@ -1,5 +1,5 @@
 // 側邊欄上方「學習進度」的更新程式（docs/CONTRACT.md B7；版面和接口見 src/components/layout/README.md）。
-// 側邊欄在每個課程頁都有，所以每個課程頁都要載入這支程式：課文放 <SidebarProgress />，
+// 側邊欄在每一頁都有，所以 src/components/layout/Sidebar.astro 放了 <SidebarProgress /> 來載入這支程式；
 // 它會同時把「每一課要做完哪些練習、測驗有哪幾題」寫進頁面（#vl-lesson-manifest），這裡才算得出哪幾課完成了。
 import { getProgress, isLessonDone, type LessonSpec, type ProgressState } from '../../lib/progress-store.ts'; // 要 Node 直接測這個檔案，所以寫出副檔名（tsconfig 允許）
 
