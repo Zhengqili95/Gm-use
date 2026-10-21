@@ -1,0 +1,31 @@
+:root {
+	--vl-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+	--vl-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+	--vl-glow: 0 0 0 1px var(--sl-color-accent), 0 8px 24px -4px var(--sl-color-accent-low);
+}
+
+.vl-fx-pop { animation: vl-fx-pop 320ms var(--vl-ease-spring); }
+.vl-fx-shake { animation: vl-fx-shake 280ms var(--vl-ease-out); }
+.vl-fx-glow { animation: vl-fx-glow 900ms var(--vl-ease-out); }
+.vl-fx-slide-in { animation: vl-fx-slide-in 200ms var(--vl-ease-out); }
+
+@keyframes vl-fx-pop {
+	from { scale: 0.85; }
+	to { scale: 1; }
+}
+@keyframes vl-fx-shake {
+	0%, 100% { translate: 0; }
+	25% { translate: -4px; }
+	65% { translate: 4px; }
+}
+@keyframes vl-fx-glow {
+	45% { box-shadow: var(--vl-glow); }
+}
+@keyframes vl-fx-slide-in {
+	from { translate: 0 -6px; opacity: 0; }
+	to { translate: 0 0; opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.vl-fx-pop, .vl-fx-shake, .vl-fx-glow, .vl-fx-slide-in { animation: none !important; }
+}
