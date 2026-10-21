@@ -20,8 +20,12 @@ sources:
     url: "https://developer.mozilla.org/zh-TW/docs/Web/CSS/Reference/Properties/background-color"
   - title: "MDN：padding（英文頁）"
     url: "https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Properties/padding"
+  - title: "MDN：Class selectors（英文頁）"
+    url: "https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Selectors/Class_selectors"
   - title: "MDN：JavaScript"
     url: "https://developer.mozilla.org/zh-TW/docs/Web/JavaScript"
+  - title: "MDN：Document: getElementById()（英文頁）"
+    url: "https://developer.mozilla.org/en-US/docs/Web/API/Document/getElementById"
   - title: "MDN：EventTarget: addEventListener()（英文頁）"
     url: "https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener"
   - title: "MDN：Node: textContent（英文頁）"
@@ -43,7 +47,7 @@ import { Aside } from '@astrojs/starlight/components';
 
 當你在瀏覽器打開一個網址時，瀏覽器會先向遠方的伺服器（server）要檔案；伺服器把寫好的網頁檔案送回來，瀏覽器再照著裡面的指令把畫面畫出來（跟伺服器要資料的細節，我們留到第 2 課再聊）。
 
-<Diagram name="lesson-1/browser-server" alt="瀏覽器向伺服器發出請求要檔案，伺服器把網頁檔案送回給瀏覽器畫出畫面" />
+<Diagram name="lesson-1/browser-server" alt="瀏覽器向伺服器要網頁檔案，伺服器把網頁檔案送回給瀏覽器畫出畫面" />
 
 網頁檔案裡最重要的就是三種語言的分工：**HTML**（超文本標記語言）管畫面上「有什麼」、**CSS**（階層樣式表）管它們「長什麼樣子」、**JavaScript**（網頁用的程式語言）管「按下去會怎樣」。這課結束時，你會親手用這三種語言，做出一張可以按「收藏」的 AI 提示詞卡片。
 
@@ -66,9 +70,9 @@ import { Aside } from '@astrojs/starlight/components';
 
 看這段程式碼時，先抓三個重點：
 
-1. **大部分標籤是成對的**：例如 `<h2>` 是標題的開頭標籤，`</h2>` 多了一條斜線，代表標題到這裡結束。開頭標籤、中間包住的文字、加上結尾標籤，合起來就叫做一個元素（element）。少數標籤沒有結尾標籤（例如後面練習裡的 `<link>`），先知道有這回事就好。
+1. **大部分標籤是成對的**：例如 `<h2>` 是標題的開頭標籤，`</h2>` 多了一條斜線，代表標題到這裡結束。開頭標籤、中間包住的內容、加上結尾標籤，合起來就叫做一個元素（element）。少數元素不包任何內容、也沒有結尾標籤（例如後面練習裡的 `<link>`），先知道有這回事就好。
 2. **元素可以裝在另一個元素裡面**：就像大盒子裝小盒子，最外層的 `<article>` 代表整張卡片，裡面裝著標題 `<h2>`、段落 `<p>` 和按鈕 `<button>`。
-3. **用 `id` 幫元素取名字**：開頭標籤裡像 `id="fav"` 或 `type="button"` 這樣的額外設定，叫做 HTML 屬性（attribute）。其中 `id` 是這個元素獨一無二的名字；等一下 CSS 與 JavaScript 都要靠名字或 `class` 分類來找到對應的元素。
+3. **用 `id` 幫元素取名字**：開頭標籤裡像 `id="fav"` 或 `type="button"` 這樣的額外設定，叫做 HTML 屬性（attribute）。其中 `type="button"` 先照著寫就好，代表這是一顆普通按鈕；`id` 則是這個元素獨一無二的名字，等一下 CSS 與 JavaScript 都要靠名字或 `class` 分類來找到對應的元素。
 
 現在下面這張提示詞卡片已經有標題和內容，但還少了一顆收藏按鈕，請你親手把它補上去。
 
@@ -89,18 +93,18 @@ CSS 的寫法固定是「先點名要改誰，再到大括號裡寫外觀設定�
 
 這段程式碼分成兩個部分：
 
-1. **選擇器（selector）**：大括號前面的 `.card` 就是選擇器，前面的小圓點代表「去畫面上找出 `class` 是 `card` 的那個元素」。
+1. **選擇器（selector）**：大括號前面的 `.card` 就是選擇器，前面的小圓點代表「去畫面上找出 `class` 是 `card` 的元素」。
 2. **CSS 屬性（property）與值**：大括號 `{ }` 裡每一行都用「CSS 屬性: 值;」的格式撰寫（注意這跟寫在 HTML 標籤裡的 HTML 屬性不同）。
    - `background-color` 用來設定背景顏色，例如寫 `lightyellow` 就會變成淡黃色。
-   - `padding` 用來設定內距，也就是卡片邊框跟裡面文字之間的留白空間；`24px` 的 `px` 是像素（螢幕上最小的一個點），把值改成 `24px`，就是留出 24 像素的空間，文字就不會擠在邊框上。
+   - `padding` 用來設定內距，也就是卡片邊框跟裡面文字之間的留白空間；`24px` 的 `px` 是像素（網頁上用來量距離的基本小單位），把值改成 `24px`，就是留出 24 像素的空間，文字就不會擠在邊框上。
 
-試著改改看下面這張卡片的 `style.css`，幫它換上淡黃色背景並加大內距。
+試著改改看下面這張卡片的 `style.css`，幫它換上淡黃色背景並加大內距（檔案裡另外兩行 `border` 和 `border-radius` 是邊框和圓角，先不用動它們）。
 
 <Exercise id="lesson-1/ex-2" />
 
 ## JavaScript：決定「按下去會怎樣」
 
-現在卡片有了結構，也有了舒服的配色與留白，但你用滑鼠點「☆ 收藏」按鈕時，畫面卻毫無動靜。這是因為 HTML 和 CSS 只負責畫出靜態的樣子；要讓網頁對使用者的動作產生反應，必須交給 JavaScript。
+現在卡片有了結構，也有了舒服的配色與留白，但你用滑鼠點「☆ 收藏」按鈕時，畫面卻毫無動靜。這是因為這顆按鈕預設按下去不會執行任何動作；要讓按鈕被按下之後去改寫畫面上的文字，就要交給 JavaScript。
 
 使用者在網頁上做的動作——像是按下按鈕（`click`）——在程式裡稱為事件（event）。JavaScript 的工作方式就是：「當某個事件發生時，去找到畫面上的元素，改變它的內容。」
 
