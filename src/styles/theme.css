@@ -290,25 +290,6 @@ nav.sidebar a[aria-current='page'][data-vl-done='true']::after {
 	color: inherit;
 }
 
-/* ---------- 外殼的示範互動元件（T-009 做好正式元件後一起刪掉） ---------- */
-
-.vl-island-check {
-	display: flex;
-	align-items: center;
-	gap: 0.75rem;
-	margin-top: 1rem;
-}
-
-.vl-island-check button {
-	padding: 0.25rem 1rem;
-	border: 0;
-	border-radius: 999px;
-	font: inherit;
-	cursor: pointer;
-	background: var(--sl-color-accent);
-	color: var(--sl-color-black);
-}
-
 @media (prefers-reduced-motion: reduce) {
 	.vl-progress-fill {
 		transition: none;
