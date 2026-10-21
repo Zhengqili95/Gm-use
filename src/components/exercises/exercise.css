@@ -160,11 +160,32 @@
   color: var(--sl-color-text);
   background: transparent;
   cursor: pointer;
+  transition:
+    translate 150ms var(--vl-ease-out, ease),
+    scale 150ms var(--vl-ease-out, ease),
+    border-color 180ms ease,
+    background-color 180ms ease,
+    box-shadow 180ms var(--vl-ease-out, ease);
 }
 
 .vl-ex-button:disabled {
   opacity: 0.55;
   cursor: not-allowed;
+}
+
+/* 按鈕的觸感（D-025，Gemini 的規格 2）：滑過時微微抬起、邊框亮起來，按下去往下壓 */
+.vl-ex-button:hover:not(:disabled) {
+  translate: 0 -1px;
+  border-color: var(--sl-color-accent);
+}
+
+.vl-ex-primary:hover:not(:disabled) {
+  box-shadow: 0 0.25rem 0.75rem -0.25rem color-mix(in srgb, var(--sl-color-accent) 60%, transparent);
+}
+
+.vl-ex-button:active:not(:disabled) {
+  translate: 0 0;
+  scale: 0.98;
 }
 
 .vl-ex-primary {
@@ -215,4 +236,17 @@
   border: 1px dashed var(--sl-color-gray-4);
   border-radius: 0.5rem;
   color: var(--sl-color-gray-2);
+}
+
+/* 減少動態：按鈕不抬起、不下壓（其他的互動回饋由 src/components/fx/ 處理） */
+@media (prefers-reduced-motion: reduce) {
+  .vl-ex-button {
+    transition: none;
+  }
+
+  .vl-ex-button:hover:not(:disabled),
+  .vl-ex-button:active:not(:disabled) {
+    translate: none;
+    scale: none;
+  }
 }

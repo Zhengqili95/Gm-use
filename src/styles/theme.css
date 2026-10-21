@@ -265,7 +265,8 @@
 	height: 100%;
 	border-radius: inherit;
 	background: var(--sl-color-accent);
-	transition: width 0.4s ease;
+	/* 進度推進時平滑地長上去（D-025，Gemini 的規格 1；曲線在 src/components/fx/fx.css） */
+	transition: width 450ms var(--vl-ease-out, ease);
 }
 
 /* 完成的課程：進度元件會在側邊欄的課程連結加上 data-vl-done="true"。
@@ -290,8 +291,17 @@ nav.sidebar a[aria-current='page'][data-vl-done='true']::after {
 	color: inherit;
 }
 
+/* 在這一頁完成的課（D-025）：sidebar-progress.ts 加上 vl-just-done，✓ 彈一下（動畫定義在 src/components/fx/fx.css） */
+nav.sidebar a.vl-just-done::after {
+	animation: vl-fx-pop 360ms var(--vl-ease-out, ease);
+}
+
 @media (prefers-reduced-motion: reduce) {
 	.vl-progress-fill {
 		transition: none;
+	}
+
+	nav.sidebar a.vl-just-done::after {
+		animation: none;
 	}
 }
