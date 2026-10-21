@@ -47,14 +47,14 @@ checks:
     equals: "★ 已收藏"
     steps:
       - click: "#fav"
-    hint: "按下按鈕後文字沒有變成「★ 已收藏」；檢查大括號裡面有沒有設定 button.textContent，且文字是否完全一致。"
+    hint: "按下按鈕後文字沒有變成「★ 已收藏」；檢查大括號裡面有沒有設定 button.textContent（textContent 的 C 要大寫），且文字是否完全一致。"
   - id: no-runtime-error
     type: noError
     steps:
       - click: "#fav"
-    hint: "執行時發生了錯誤；檢查你補上的那一行，新文字前後有沒有成對的英文雙引號，以及大小寫是否為 textContent。"
+    hint: "執行時發生了錯誤；檢查你補上的那一行，新文字前後有沒有成對的英文雙引號，以及 button 有沒有拼錯。"
 hints:
   - "JavaScript 可以在點擊事件發生時執行大括號裡的程式碼，透過修改元素的 textContent 來換掉畫面上的文字。"
-  - "打開 script.js，找到 addEventListener 大括號裡面的註解那一行，在它下面補上改文字的指令。"
+  - "打開 script.js，找到 addEventListener 大括號裡面以 // 開頭的說明文字，在它下面補上改文字的指令。"
   - 'button.textContent = "已送出"; 會把 button 的文字換成「已送出」。'
 success: "太棒了！你親手把 HTML 的結構、CSS 的外觀和 JavaScript 的互動行為拼成一張完整的提示詞卡片了！"

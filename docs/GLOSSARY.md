@@ -37,7 +37,7 @@
 | value | 值 | 值 | CSS 屬性冒號後面的內容，例如 `lightyellow`、`24px` |
 | background-color | 背景顏色 | `background-color`（背景顏色） | CSS 屬性名稱，不翻；課文寫「用來設定背景顏色」 |
 | padding | 內距 | `padding`（內距） | CSS 屬性名稱，不翻；課文寫「也就是邊框跟裡面文字之間的留白空間」 |
-| px | 像素 | `px`（像素） | CSS 的長度單位，例如 `24px`；課文寫「`px` 是像素（螢幕上最小的一個點）」 |
+| px | 像素 | `px`（像素） | CSS 的長度單位，例如 `24px`；課文寫「`px` 是像素（網頁上用來量距離的基本小單位）」 |
 | event | 事件 | 事件（event） | 使用者在網頁上做的動作，例如按下按鈕（`click`） |
 | function | 函式 | 函式（function） | 第 1 課只用「照著寫就好」帶過 |
 | textContent | （不翻） | `textContent` | JavaScript 裡「元素裡面的文字」；課文寫「`textContent` 代表按鈕裡面的文字」 |

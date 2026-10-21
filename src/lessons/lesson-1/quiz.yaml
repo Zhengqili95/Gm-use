@@ -49,9 +49,9 @@ questions:
   - id: q5
     prompt: "你請 AI 幫你寫了一張提示詞卡片，畫面看起來很漂亮，但點「收藏」按鈕卻完全沒反應。你最應該先請 AI 檢查哪裡？"
     options:
-      - text: "檢查 JavaScript 有沒有綁定 click 事件，以及按鈕的 id 名稱有沒有對上"
+      - text: "檢查 JavaScript 有沒有寫好 click 事件，以及按鈕的 id 名稱有沒有對上"
         correct: true
-        explain: "完全正確！「按下去會怎樣」是由 JavaScript 負責的，最常見的原因就是沒寫點擊事件，或 getElementById 找錯了 id 名字。"
+        explain: "完全正確！「按下去會怎樣」是由 JavaScript 負責的，常見的原因就是沒寫點擊事件，或 getElementById 找錯了 id 名字。"
       - text: "請 AI 把 CSS 的 padding 內距調大一點，讓按鈕比較好按"
         explain: "CSS 只會改變按鈕看起來的大小和留白，就算調得再大，沒有 JavaScript 事件一樣不會有反應。"
       - text: "請 AI 把 HTML 的標題文字寫短一點，減少瀏覽器的負擔"
