@@ -18,3 +18,12 @@
 - `LessonList.astro`：首頁「三堂課，做出同一張卡」下面的課程卡片。課名、說明、時間從課文的 frontmatter 讀（標題要寫成「第 N 課｜課名」，卡片只放後半）。`draft: true` 的課標「即將推出」、不放連結（D-013 做法 A）；課文改成 `draft: false`，卡片就自動變成可以點。
 - `route-data.ts`：Starlight 的路由中介層，在 `astro.config.mjs` 的 `routeMiddleware` 登記。首頁主視覺的按鈕如果連到還沒上線的課，就拿掉；相對連結會補上 `base`（`/Gm-use/`），所以 `index.mdx` 裡照樣寫 `lessons/lesson-1/` 就好。
 - `FavToggle.astro`：首頁主視覺那張卡的「☆ 收藏」按鈕，按一下變成「★ 已收藏」。卡片本身寫在 `src/content/docs/index.mdx` 的 `hero.image.html`，樣式在 `src/styles/theme.css`。
+
+## `Footer.astro`、`feedback.ts`：每一課最下面的「回報問題／給建議」（T-012）
+
+規格「朋友的回饋」：每一課最下面放一個連結，連到使用者建立的 Google 表單（T-004）。
+
+- **網址填在 `feedback.ts` 的 `FEEDBACK_FORM_URL`**，只要改這一行。空字串時哪一頁都不顯示（表單還沒好之前就是這樣）。
+- 只接受 Google 表單的網址（`https://forms.gle/…` 或 `https://docs.google.com/forms/…`）。填錯時 `npm test` 會抓到，`npm run build` 也會失敗，不會把壞掉的連結放上線。
+- 只有課程頁（`lessons/lesson-N`）顯示；首頁、404、練習實驗室都不放。連結另開新分頁，不打斷正在讀的課。
+- `Footer.astro` 覆寫 Starlight 的頁尾（在 `astro.config.mjs` 的 `components` 登記）：先放回饋連結，再放原本的頁尾（上一頁、下一頁）。樣式在 `src/styles/theme.css` 的「回報問題／給建議」段落。
