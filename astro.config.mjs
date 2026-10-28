@@ -17,7 +17,8 @@ export default defineConfig({
 			locales: {
 				root: { label: '繁體中文', lang: 'zh-TW' },
 			},
-			customCss: ['./src/styles/theme.css'],
+			// fx.css：互動回饋共用的動畫（T-020、D-025），練習、測驗、側邊欄都會用到，所以每一頁都載入
+			customCss: ['./src/styles/theme.css', './src/components/fx/fx.css'],
 			// 首頁的按鈕不連到還沒上線的課，說明見 src/components/layout/README.md
 			routeMiddleware: './src/components/layout/route-data.ts',
 			components: {

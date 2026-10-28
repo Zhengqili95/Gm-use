@@ -1,0 +1,78 @@
+---
+import './fx.css';
+---
+
+<vl-fx-demo>
+	<p class="intro">從「做對了」的小小肯定，到完成一課的慶祝。點一下，看看回饋如何出現。</p>
+	<p class="motion-note" role="status">你已開啟「減少動態」：文字與結果照常顯示，所有動畫及粒子都會停止。</p>
+	<div class="examples">
+		<section class="example">
+			<div class="sample" data-sample="pop"><span class="check" aria-hidden="true">✓</span><span>練習檢查通過<br /><small>標題的顏色正確</small></span></div>
+			<div class="caption"><h2>做對了，輕輕彈一下</h2><p>讓檢查結果出現時，有一個清楚的落點。</p><button data-effect="pop" data-target="pop">播放彈出</button></div>
+		</section>
+		<section class="example">
+			<div class="sample option" data-sample="shake"><span aria-hidden="true">○</span><span>用 HTML 設定文字顏色<br /><small>再想想：外觀由哪個工具負責？</small></span></div>
+			<div class="caption"><h2>選錯了，溫和提醒</h2><p>左右輕晃一次，提示你重新看一下選項。</p><button data-effect="shake" data-target="shake">播放晃動</button></div>
+		</section>
+		<section class="example">
+			<div class="sample hint" data-sample="slide-in"><span aria-hidden="true">↳</span><span>先看屬性的名稱<br /><small>文字顏色使用 color 屬性。</small></span></div>
+			<div class="caption"><h2>提示從上方滑入</h2><p>讓新出現的提示容易被看見。</p><button data-effect="slide-in" data-target="slide-in">播放滑入</button></div>
+		</section>
+		<section class="example">
+			<div class="sample card" data-sample="glow"><span>我的 AI 提示詞收藏卡<br /><small>這次修改已通過檢查。</small></span><span aria-hidden="true">✦</span></div>
+			<div class="caption"><h2>完成的卡片，亮一下</h2><p>邊框以品牌綠亮起，再柔和退去。</p><button data-effect="glow" data-target="glow">播放光暈</button></div>
+		</section>
+		<section class="example">
+			<div class="sample lesson"><span class="check" data-sample="done" aria-hidden="true">✓</span><span>畫面是怎麼拼出來的<br /><small>第 1 課已完成</small></span></div>
+			<div class="caption"><h2>走完一課的小肯定</h2><p>只讓完成記號彈出，課名保持安定。</p><button data-effect="pop" data-target="done">播放完成記號</button></div>
+		</section>
+	</div>
+	<section class="celebration">
+		<h2>多一點慶祝？</h2>
+		<p>星星和彩帶預設關閉。這裡可以試看，之後再決定是否放進課程。</p>
+		<div class="celebration-buttons"><button data-kind="pass">試看過關星星</button><button data-kind="lesson">試看完成彩帶</button></div>
+		<small>每次效果不到 1.2 秒，不會擋住操作。開啟「減少動態」時，這裡也不播放。</small>
+	</section>
+</vl-fx-demo>
+
+<script>
+	import { celebrate, play, type Effect } from './fx';
+	class FxDemo extends HTMLElement {
+		connectedCallback() {
+			if (this.dataset.ready) return;
+			this.dataset.ready = 'true';
+			this.addEventListener('click', event => {
+				const button = (event.target as Element).closest('button');
+				if (!button || !this.contains(button)) return;
+				const { effect, target, kind } = button.dataset;
+				if (effect && target) play(this.querySelector<HTMLElement>(`[data-sample="${target}"]`), effect as Effect);
+				if (kind === 'pass' || kind === 'lesson') celebrate(button, kind, { force: true });
+			});
+		}
+	}
+	if (!customElements.get('vl-fx-demo')) customElements.define('vl-fx-demo', FxDemo);
+</script>
+
+<style>
+	vl-fx-demo { display: block; }
+	.intro { font-size: 1.1rem; max-width: 38rem; }
+	.motion-note { display: none; border-inline-start: 3px solid var(--sl-color-accent); padding: .75rem 1rem; background: var(--sl-color-accent-low); }
+	.examples { margin-block: 2rem; }
+	.example { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: center; gap: 2rem; padding-block: 2rem; border-bottom: 1px solid var(--sl-color-hairline-light); }
+	.example > *, .caption > *, .sample > *, .celebration-buttons > * { margin-top: 0; }
+	.caption h2, .celebration h2 { font-size: 1.15rem; margin: 0 0 .5rem; }
+	.caption p { margin: 0 0 1rem; color: var(--sl-color-gray-2); }
+	.sample { display: flex; align-items: center; gap: 1rem; padding: 1.25rem; min-height: 7.5rem; border: 1px solid var(--sl-color-hairline-light); border-radius: .75rem; background: var(--sl-color-bg-nav); overflow-wrap: anywhere; }
+	.sample small { color: var(--sl-color-gray-2); }
+	.check { display: inline-flex; flex: none; align-items: center; justify-content: center; width: 2rem; height: 2rem; border-radius: 50%; color: var(--sl-color-accent-high); background: var(--sl-color-accent-low); font-weight: 700; }
+	.hint { border-inline-start: 3px solid var(--sl-color-accent); }
+	.card { justify-content: space-between; }
+	button { min-height: 44px; padding: .5rem 1rem; border: 1px solid var(--sl-color-accent); border-radius: .5rem; font: inherit; font-weight: 600; background: transparent; color: var(--sl-color-accent-high); cursor: pointer; }
+	button:hover { background: var(--sl-color-accent-low); }
+	button:focus-visible { outline: 2px solid var(--sl-color-accent); outline-offset: 4px; }
+	.celebration { padding-block: 1rem 2rem; }
+	.celebration-buttons { display: flex; flex-wrap: wrap; gap: .75rem; margin-block: 1rem; }
+	.celebration small { display: block; color: var(--sl-color-gray-2); }
+	@media (max-width: 40rem) { .example { grid-template-columns: minmax(0, 1fr); gap: 1rem; } }
+	@media (prefers-reduced-motion: reduce) { .motion-note { display: block; } }
+</style>

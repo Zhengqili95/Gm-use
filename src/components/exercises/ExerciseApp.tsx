@@ -1,6 +1,7 @@
-import { useEffect, useReducer, useRef, useState } from 'preact/hooks';
+import { useEffect, useLayoutEffect, useReducer, useRef, useState } from 'preact/hooks';
 import { registerExercise, touchExercise } from '../../lib/learn-context';
 import { getExercise, updateExercise } from '../../lib/progress-store';
+import { play } from '../fx/fx';
 import { canReveal, initialFlow, isDone, reduce } from './flow';
 import { buildSrcdoc } from './runner/build-srcdoc';
 import { LOOP_ABORT_MARK } from './runner/guard-loops';
@@ -35,6 +36,12 @@ export default function ExerciseApp({ exercise }: { exercise: PageExercise }) {
   const [solutionOpen, setSolutionOpen] = useState(false);
   const previewRef = useRef<HTMLIFrameElement>(null);
   const previewReadyRef = useRef(false);
+  // 互動回饋（D-025）要播動畫的地方
+  const sectionRef = useRef<HTMLElement>(null);
+  const feedbackRef = useRef<HTMLParagraphElement>(null);
+  const hintsRef = useRef<HTMLOListElement>(null);
+  const solutionRef = useRef<HTMLDivElement>(null);
+  const hintAddedRef = useRef(false); // 按了「給我提示」才播；還原進度時多出來的提示不播
 
   // 最新的值放在 ref 裡，存檔和「問 AI」的上下文才讀得到即時的內容
   const filesRef = useRef(files);
@@ -159,6 +166,29 @@ export default function ExerciseApp({ exercise }: { exercise: PageExercise }) {
     return () => window.removeEventListener('message', onMessage);
   }, []);
 
+  // 互動回饋（D-025，src/components/fx/）：過關時整個練習框亮起來、結果彈出；沒過時結果晃一下。
+  // 用 useLayoutEffect：畫面畫出來之前就開始播，不會先閃一下原本的樣子。減少動態時 play() 什麼都不做。
+  useLayoutEffect(() => {
+    if (!feedback) return;
+    if (feedback.kind === 'pass') {
+      play(sectionRef.current, 'glow');
+      play(feedbackRef.current, 'pop');
+    } else {
+      play(feedbackRef.current, 'shake');
+    }
+  }, [feedback]);
+
+  // 新的一層提示、打開的標準答案滑進來
+  useLayoutEffect(() => {
+    if (!hintAddedRef.current) return;
+    hintAddedRef.current = false;
+    play((hintsRef.current?.lastElementChild as HTMLElement | null) ?? null, 'slide-in');
+  }, [flow.hintsShown]);
+
+  useLayoutEffect(() => {
+    if (solutionOpen) play(solutionRef.current, 'slide-in');
+  }, [solutionOpen]);
+
   async function onCheck() {
     touch();
     persist(); // 執行前先存一次，萬一程式卡住，重新整理也不會丟程式碼
@@ -184,6 +214,7 @@ export default function ExerciseApp({ exercise }: { exercise: PageExercise }) {
 
   function onHint() {
     touch();
+    hintAddedRef.current = true;
     dispatch({ type: 'hint' });
   }
 
@@ -208,7 +239,7 @@ export default function ExerciseApp({ exercise }: { exercise: PageExercise }) {
   const done = isDone(flow);
 
   return (
-    <section class="vl-ex" data-exercise-id={exercise.id} data-status={flow.status} data-no-context>
+    <section ref={sectionRef} class="vl-ex" data-exercise-id={exercise.id} data-status={flow.status} data-no-context>
       <header class="vl-ex-head">
         <h3 class="vl-ex-title">{exercise.title}</h3>
         <span class="vl-ex-badge" data-done={done ? 'true' : 'false'}>
@@ -311,7 +342,7 @@ export default function ExerciseApp({ exercise }: { exercise: PageExercise }) {
       </div>
 
       {feedback && (
-        <p class="vl-ex-feedback" data-kind={feedback.kind} role="status">
+        <p ref={feedbackRef} class="vl-ex-feedback" data-kind={feedback.kind} role="status">
           {feedback.kind === 'pass' ? '✓ ' : ''}
           {feedback.text}
           {feedback.kind === 'fail' && feedback.remaining && feedback.remaining > 1 ? `（還有 ${feedback.remaining - 1} 項沒通過）` : ''}
@@ -319,7 +350,7 @@ export default function ExerciseApp({ exercise }: { exercise: PageExercise }) {
       )}
 
       {flow.hintsShown > 0 && (
-        <ol class="vl-ex-hints">
+        <ol ref={hintsRef} class="vl-ex-hints">
           {exercise.hints.slice(0, flow.hintsShown).map((hint, index) => (
             <li>
               <strong>{HINT_LABELS[index]}：</strong>
@@ -330,7 +361,7 @@ export default function ExerciseApp({ exercise }: { exercise: PageExercise }) {
       )}
 
       {solutionOpen && (
-        <div class="vl-ex-solution" data-no-context>
+        <div ref={solutionRef} class="vl-ex-solution" data-no-context>
           <p class="vl-ex-label">標準答案（唯讀）</p>
           {editable.map((name) => (
             <div>

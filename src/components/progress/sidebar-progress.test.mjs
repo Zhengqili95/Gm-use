@@ -2,7 +2,7 @@
 // 畫面（更新 DOM）的部分要在瀏覽器裡驗證。
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { lessonIdFromPath, parseManifest, summarize } from './sidebar-progress.ts';
+import { lessonIdFromPath, newlyDone, parseManifest, summarize } from './sidebar-progress.ts';
 
 const done = { status: 'passed', attempts: 1, failedAttempts: 0, hintsShown: 0, revealShown: false, files: {}, updatedAt: '' };
 const manifest = {
@@ -81,5 +81,21 @@ describe('課程清單的格式檢查（parseManifest）', () => {
       'lesson-5': { exercises: [] },
     });
     assert.deepEqual(parseManifest(json), { 'lesson-1': { exercises: ['lesson-1/ex-1'], questions: ['q1'] } });
+  });
+});
+
+describe('剛完成的課（newlyDone，D-025 的 ✓ 彈一下和彩帶）', () => {
+  it('打開頁面時第一次畫：已經完成的課不算剛完成', () => {
+    assert.deepEqual(newlyDone(null, ['lesson-1']), []);
+  });
+
+  it('這一次才完成的課才算', () => {
+    assert.deepEqual(newlyDone([], ['lesson-1']), ['lesson-1']);
+    assert.deepEqual(newlyDone(['lesson-1'], ['lesson-1', 'lesson-3']), ['lesson-3']);
+  });
+
+  it('沒有變、或進度被清掉（變成沒完成）：都不算', () => {
+    assert.deepEqual(newlyDone(['lesson-1'], ['lesson-1']), []);
+    assert.deepEqual(newlyDone(['lesson-1'], []), []);
   });
 });
