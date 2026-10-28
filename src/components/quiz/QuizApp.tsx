@@ -32,7 +32,9 @@ export default function QuizApp({ quiz }: { quiz: Quiz }) {
     if (next) updateQuiz(lessonId, question.id, next);
     setAnnouncement(`${option.correct ? '正確。' : '不是這個答案。'}${option.explain}`);
     // 互動回饋（D-025，src/components/fx/）：選對時 ✓ 彈出、選錯時選項晃一下；說明是這次才出現的，就滑進來。
-    // 等下一個 frame 才播：那時畫面已經更新，說明才在畫面上（減少動態時 play() 什麼都不做）
+    // 等下一個 frame 才播：Preact 預設用 queueMicrotask 重畫，所以下一個 frame 時畫面已經更新，說明才在畫面上。
+    // 不改用「狀態加 useLayoutEffect」：再點已經點過的選項時狀態沒變、不會重畫，就沒有回饋了（M-114）。
+    // 減少動態時 play() 什麼都不做。
     requestAnimationFrame(() => {
       if (option.correct) play(button.querySelector<HTMLElement>('.vl-quiz-mark'), 'pop');
       else play(button, 'shake');
