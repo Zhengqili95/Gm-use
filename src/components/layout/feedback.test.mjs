@@ -22,15 +22,18 @@ describe('回饋連結放在哪幾頁', () => {
 		assert.equal(feedbackHref(` ${form} `, 'lessons/lesson-1'), form);
 	});
 	it('網址填錯就丟錯誤，不管是哪一頁（建置會失敗）', () => {
-		assert.throws(() => feedbackHref('http://forms.gle/abc123', 'index'), /不是 Google 表單的網址/);
-		assert.throws(() => feedbackHref('forms.gle/abc123', 'lessons/lesson-1'), /不是 Google 表單的網址/);
+		assert.throws(() => feedbackHref('http://forms.gle/abc123', 'index'), /不是給填寫的人用的 Google 表單網址/);
+		assert.throws(() => feedbackHref('forms.gle/abc123', 'lessons/lesson-1'), /不是給填寫的人用的 Google 表單網址/);
+		assert.throws(() => feedbackHref('https://docs.google.com/forms/d/1exampleFormId/edit', 'lessons/lesson-1'), /不是給填寫的人用的 Google 表單網址/);
 	});
 });
 
 describe('Google 表單的網址', () => {
-	it('接受 forms.gle 的短網址和 docs.google.com/forms 的完整網址', () => {
+	it('接受給填寫的人用的網址：forms.gle 的短網址、…/viewform（網址後面的 ?usp=… 不影響）', () => {
 		assert.ok(isFormUrl('https://forms.gle/abc123'));
 		assert.ok(isFormUrl('https://docs.google.com/forms/d/e/1FAIpQLSexample/viewform'));
+		assert.ok(isFormUrl('https://docs.google.com/forms/d/e/1FAIpQLSexample/viewform?usp=publish-editor'));
+		assert.ok(isFormUrl('https://docs.google.com/forms/d/1exampleFormId/viewform'));
 	});
 	it('不接受 http、別的網域、Google 文件、少了 https:// 的網址', () => {
 		assert.equal(isFormUrl('http://forms.gle/abc123'), false);
@@ -38,6 +41,12 @@ describe('Google 表單的網址', () => {
 		assert.equal(isFormUrl('https://docs.google.com.example.com/forms/abc'), false);
 		assert.equal(isFormUrl('https://docs.google.com/document/d/abc/edit'), false);
 		assert.equal(isFormUrl('forms.gle/abc123'), false);
+	});
+	it('不接受編輯畫面的網址（學習者打開會看到「需要存取權」）和不完整的網址', () => {
+		assert.equal(isFormUrl('https://docs.google.com/forms/d/1exampleFormId/edit'), false);
+		assert.equal(isFormUrl('https://docs.google.com/forms/d/e/1FAIpQLSexample/viewform/extra'), false);
+		assert.equal(isFormUrl('https://docs.google.com/forms/'), false);
+		assert.equal(isFormUrl('https://forms.gle/'), false);
 	});
 	it('現在填的網址：還沒填（空字串），或是 Google 表單的網址', () => {
 		const url = FEEDBACK_FORM_URL.trim();

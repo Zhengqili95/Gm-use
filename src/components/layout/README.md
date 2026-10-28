@@ -23,7 +23,7 @@
 
 規格「朋友的回饋」：每一課最下面放一個連結，連到使用者建立的 Google 表單（T-004）。
 
-- **網址填在 `feedback.ts` 的 `FEEDBACK_FORM_URL`**，只要改這一行。空字串時哪一頁都不顯示（表單還沒好之前就是這樣）。
-- 只接受 Google 表單的網址（`https://forms.gle/…` 或 `https://docs.google.com/forms/…`）。填錯時 `npm test` 會抓到，`npm run build` 也會失敗，不會把壞掉的連結放上線。
+- **網址填在 `feedback.ts` 的 `FEEDBACK_FORM_URL`**，只要改這一行；現在填的是使用者在 T-004 做的表單（M-118）。改成空字串的話，哪一頁都不顯示。
+- 只接受給填寫的人用的 Google 表單網址（`https://forms.gle/…` 或 `https://docs.google.com/forms/d/…/viewform`，後面的 `?usp=…` 可有可無）。編輯畫面的網址（結尾是 `/edit`）不行，學習者打開會看到「需要存取權」。填錯時 `npm test` 會抓到，`npm run build` 也會失敗，不會把壞掉的連結放上線。
 - 只有課程頁（`lessons/lesson-N`）顯示；首頁、404、練習實驗室都不放。連結另開新分頁，不打斷正在讀的課。
 - `Footer.astro` 覆寫 Starlight 的頁尾（在 `astro.config.mjs` 的 `components` 登記）：先放回饋連結，再放原本的頁尾（上一頁、下一頁）。樣式在 `src/styles/theme.css` 的「回報問題／給建議」段落。
