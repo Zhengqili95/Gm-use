@@ -5,8 +5,8 @@
 | 檔案 | 內容 |
 |---|---|
 | `SidebarProgress.astro` | 放在 `src/components/layout/Sidebar.astro` 裡，每一頁的側邊欄都有，課文不用放。它在建置時把每一課要做完的東西寫進頁面（`<script type="application/json" id="vl-lesson-manifest">`：每個練習的 id、測驗每一題的 id），再載入 `sidebar-progress.ts` |
-| `sidebar-progress.ts` | 在瀏覽器裡執行：讀進度，更新 `[data-vl-progress-count]`、`[data-vl-progress-fill]`，在完成的課程連結（`nav.sidebar a`）加 `data-vl-done="true"`；進度有改動時（`vibe:progress` 事件，包含別的分頁改的）重畫 |
-| `sidebar-progress.test.mjs` | 課號從網址取出、哪幾課完成、清單的格式檢查，用 Node 直接測 |
+| `sidebar-progress.ts` | 在瀏覽器裡執行：讀進度，更新 `[data-vl-progress-count]`、`[data-vl-progress-fill]`，在完成的課程連結（`nav.sidebar a`）加 `data-vl-done="true"`；進度有改動時（`vibe:progress` 事件，包含別的分頁改的）重畫。在這一頁看著完成的課，連結加 `vl-just-done`，✓ 彈一下；完成的是這一頁的課，就從學習者最後點的地方放彩帶（T-020b、D-025，效果在 `src/components/fx/`；打開頁面時已經完成的課不算「剛完成」） |
+| `sidebar-progress.test.mjs` | 課號從網址取出、哪幾課完成、清單的格式檢查、剛完成的課（`newlyDone`），用 Node 直接測 |
 
 「一課完成」的判斷在 `src/lib/progress-store.ts` 的 `isLessonDone`：課文 frontmatter `exercises` 裡每個練習都是 `passed` 或 `revealed`，而且測驗每一題都答對（`done`）。沒有練習或沒有測驗題目的課（佔位頁）不算完成。完成是從目前的課文和進度算出來的，不是存起來的旗標：課文後來多了一題，已經完成的課會變回沒完成。
 

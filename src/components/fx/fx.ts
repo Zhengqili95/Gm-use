@@ -1,10 +1,29 @@
-import { FX_PARTICLES, makeParticles, shouldAnimate, shouldCelebrate, type Celebration } from './fx-logic.ts';
+import { FX_PARTICLES, makeParticles, shouldAnimate, shouldCelebrate, tiltAngles, type Celebration } from './fx-logic.ts';
 export { FX_PARTICLES } from './fx-logic.ts';
 
 export type Effect = 'pop' | 'shake' | 'glow' | 'slide-in';
-const durations = { pop: 320, shake: 280, glow: 900, 'slide-in': 200 };
+const durations = { pop: 360, shake: 320, glow: 1400, 'slide-in': 240 }; // Same lengths as fx.css (D-025).
 const active = new WeakMap<HTMLElement, () => void>();
 const motion = '(prefers-reduced-motion: reduce)';
+const finePointer = '(hover: hover) and (pointer: fine)';
+
+/** Tilts an element with the vl-fx-tilt class toward the mouse (D-025). Does nothing for touch, pens or reduced motion. */
+export function tilt(el: HTMLElement | null, event: PointerEvent, max = 3): void {
+	if (!el || event.pointerType !== 'mouse') return;
+	const win = el.ownerDocument.defaultView;
+	if (!win || !win.matchMedia(finePointer).matches || !shouldAnimate(win.matchMedia(motion).matches)) return;
+	const rect = el.getBoundingClientRect();
+	if (!rect.width || !rect.height) return;
+	const angles = tiltAngles((event.clientX - rect.left) / rect.width, (event.clientY - rect.top) / rect.height, max);
+	el.style.setProperty('--vl-tilt-x', `${angles.x.toFixed(2)}deg`);
+	el.style.setProperty('--vl-tilt-y', `${angles.y.toFixed(2)}deg`);
+}
+
+/** Levels the element again when the mouse leaves. */
+export function untilt(el: HTMLElement | null): void {
+	el?.style.removeProperty('--vl-tilt-x');
+	el?.style.removeProperty('--vl-tilt-y');
+}
 
 /** One effect per element; replacing it also removes the previous listeners/timer. */
 export function play(el: HTMLElement | null, effect: Effect): void {

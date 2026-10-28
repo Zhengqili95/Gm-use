@@ -1,31 +1,43 @@
 :root {
 	--vl-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 	--vl-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-	--vl-glow: 0 0 0 1px var(--sl-color-accent), 0 8px 24px -4px var(--sl-color-accent-low);
+	/* D-025 "longer, stronger glow": a 2px brand ring plus a soft brand-green halo, visible on light and dark themes */
+	--vl-glow: 0 0 0 2px var(--sl-color-accent), 0 0 1.25rem color-mix(in srgb, var(--sl-color-accent) 45%, transparent);
 }
 
-.vl-fx-pop { animation: vl-fx-pop 320ms var(--vl-ease-spring); }
-.vl-fx-shake { animation: vl-fx-shake 280ms var(--vl-ease-out); }
-.vl-fx-glow { animation: vl-fx-glow 900ms var(--vl-ease-out); }
-.vl-fx-slide-in { animation: vl-fx-slide-in 200ms var(--vl-ease-out); }
+/* D-025 "stronger animation": a bigger pop with a visible overshoot, one more shake, a 1.4s glow. Keep in sync with durations in fx.ts. */
+.vl-fx-pop { animation: vl-fx-pop 360ms var(--vl-ease-out); }
+.vl-fx-shake { animation: vl-fx-shake 320ms var(--vl-ease-out); }
+.vl-fx-glow { animation: vl-fx-glow 1400ms var(--vl-ease-out); }
+.vl-fx-slide-in { animation: vl-fx-slide-in 240ms var(--vl-ease-out); }
 
 @keyframes vl-fx-pop {
-	from { scale: 0.85; }
-	to { scale: 1; }
+	0% { scale: 0.7; }
+	55% { scale: 1.12; }
+	100% { scale: 1; }
 }
 @keyframes vl-fx-shake {
 	0%, 100% { translate: 0; }
-	25% { translate: -4px; }
-	65% { translate: 4px; }
+	20% { translate: -5px; }
+	45% { translate: 5px; }
+	70% { translate: -3px; }
+	85% { translate: 2px; }
 }
 @keyframes vl-fx-glow {
-	45% { box-shadow: var(--vl-glow); }
+	30% { box-shadow: var(--vl-glow); }
 }
 @keyframes vl-fx-slide-in {
-	from { translate: 0 -6px; opacity: 0; }
+	from { translate: 0 -8px; opacity: 0; }
 	to { translate: 0 0; opacity: 1; }
+}
+
+/* Follows the mouse (D-025): tilt() in fx.ts writes --vl-tilt-x/--vl-tilt-y; without them it stays flat.
+   The element's own transition should include transform, so it eases back when the mouse leaves. */
+.vl-fx-tilt {
+	transform: perspective(40rem) rotateX(var(--vl-tilt-y, 0deg)) rotateY(var(--vl-tilt-x, 0deg));
 }
 
 @media (prefers-reduced-motion: reduce) {
 	.vl-fx-pop, .vl-fx-shake, .vl-fx-glow, .vl-fx-slide-in { animation: none !important; }
+	.vl-fx-tilt { transform: none; }
 }
