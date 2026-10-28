@@ -1,6 +1,7 @@
 ---
 // 在 Starlight 原本的頁尾上方，加「回報問題／給建議」連結：只有課程頁、而且填了表單網址才顯示。
 // 網址填在同資料夾的 feedback.ts，說明見 README.md。
+// 回饋框加了 data-pagefind-ignore：站內搜尋不收這段，不然每一課都會被「回報問題」「給建議」搜到（M-120 建議 1）。
 import Default from '@astrojs/starlight/components/Footer.astro';
 import { Icon } from '@astrojs/starlight/components';
 import { FEEDBACK_FORM_URL, feedbackHref } from './feedback';
@@ -10,7 +11,7 @@ const href = feedbackHref(FEEDBACK_FORM_URL, Astro.locals.starlightRoute.entry.i
 
 {
 	href && (
-		<aside class="vl-feedback" aria-labelledby="vl-feedback-title">
+		<aside class="vl-feedback" aria-labelledby="vl-feedback-title" data-pagefind-ignore>
 			<p id="vl-feedback-title" class="vl-feedback-title">這一課有看不懂的地方，或想給建議嗎？</p>
 			<a class="vl-feedback-link" href={href} target="_blank" rel="noopener noreferrer">
 				回報問題／給建議
