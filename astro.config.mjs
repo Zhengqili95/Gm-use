@@ -24,6 +24,8 @@ export default defineConfig({
 			components: {
 				// 在側邊欄上方加「學習進度」區塊，說明見 src/components/layout/README.md
 				Sidebar: './src/components/layout/Sidebar.astro',
+				// 每一課最下面的「回報問題／給建議」連結，網址填在 src/components/layout/feedback.ts
+				Footer: './src/components/layout/Footer.astro',
 			},
 			sidebar: [
 				{
