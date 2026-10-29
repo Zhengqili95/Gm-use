@@ -26,6 +26,10 @@ export default defineConfig({
 				Sidebar: './src/components/layout/Sidebar.astro',
 				// 每一課最下面的「回報問題／給建議」連結，網址填在 src/components/layout/feedback.ts
 				Footer: './src/components/layout/Footer.astro',
+				// 主題選單多一個「黑色」，右邊的「本頁內容」可以收合、預設收起來（D-029），說明見 src/components/layout/README.md
+				ThemeProvider: './src/components/layout/ThemeProvider.astro',
+				ThemeSelect: './src/components/layout/ThemeSelect.astro',
+				TableOfContents: './src/components/layout/TableOfContents.astro',
 			},
 			sidebar: [
 				{

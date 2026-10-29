@@ -1,6 +1,7 @@
 /*
  * vibe-learn 主題：清爽好讀，品牌色是深綠（和觀察房一致）。
- * Starlight 的預設是深色主題，寫在 :root；淺色主題寫在 :root[data-theme='light']。
+ * Starlight 的預設是深色主題（主題選單上叫「墨綠」），寫在 :root；淺色主題寫在 :root[data-theme='light']；
+ * 「黑色」是深色主題換成黑底，寫在 :root[data-theme='dark'][data-vl-shade='black']（D-029，選單在 src/components/layout/ThemeSelect.astro）。
  * 在淺色主題裡，--sl-color-white 是「最深的文字色」，--sl-color-black 是背景色（Starlight 的命名方式）。
  */
 
@@ -44,6 +45,20 @@
 
 	--vl-card-paper: #ffffff;
 	--vl-card-edge: #d4ddd8;
+}
+
+/* 黑色：灰階拿掉綠色、底色再暗一點，品牌綠（accent）和墨綠一樣。程式碼區塊的底色也跟著 gray-6、black 走。 */
+:root[data-theme='dark'][data-vl-shade='black'] {
+	--sl-color-gray-1: #e6e6e6;
+	--sl-color-gray-2: #bfbfbf;
+	--sl-color-gray-3: #8c8c8c;
+	--sl-color-gray-4: #5c5c5c;
+	--sl-color-gray-5: #363636;
+	--sl-color-gray-6: #171717;
+	--sl-color-black: #0b0b0b;
+
+	--vl-card-paper: #121212;
+	--vl-card-edge: #2c2c2c;
 }
 
 /* ---------- 首頁主視覺：第 1 課要做的「AI 提示詞收藏卡」 ---------- */
