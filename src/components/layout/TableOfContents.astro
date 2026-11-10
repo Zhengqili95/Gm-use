@@ -1,0 +1,179 @@
+---
+// 右邊的「本頁內容」：可以展開、收合，預設收起來（D-029）。
+// 收起來時右欄只剩一條放按鈕的窄欄，內容區變寬，練習的編輯區和預覽框也跟著變寬。
+// 只有寬螢幕（72rem 以上）有右欄；比較窄的螢幕用 Starlight 原本放在上方的下拉選單，本來就是收起來的，不受影響。
+// 收合狀態寫在 <html> 的 data-vl-toc（open／closed）：頁面一開始由 ThemeProvider.astro 照上次的選擇設定，這裡的按鈕切換並存起來（key 在 prefs.ts）。
+// 不能跑 JavaScript 時沒有 data-vl-toc：照 Starlight 原本的樣子全部展開，也不顯示按鈕。
+import Default from '@astrojs/starlight/components/TableOfContents.astro';
+import { Icon } from '@astrojs/starlight/components';
+---
+
+<vl-toc-toggle>
+	<button type="button" class="vl-toc-button" aria-controls="vl-toc-body" aria-expanded="false">
+		<span class="vl-toc-label">{Astro.locals.t('tableOfContents.onThisPage')}</span>
+		<Icon name="right-caret" class="vl-toc-caret" />
+	</button>
+	<div id="vl-toc-body">
+		<Default />
+	</div>
+</vl-toc-toggle>
+
+<script>
+	import { TOC_KEY } from './prefs';
+
+	class VlTocToggle extends HTMLElement {
+		constructor() {
+			super();
+			const button = this.querySelector('button');
+			if (!button) return;
+			const root = document.documentElement;
+			const show = () => {
+				const open = root.dataset.vlToc === 'open';
+				button.setAttribute('aria-expanded', String(open));
+				button.title = open ? '收起「本頁內容」' : '展開「本頁內容」';
+			};
+			show();
+			button.addEventListener('click', () => {
+				const open = root.dataset.vlToc !== 'open';
+				root.dataset.vlToc = open ? 'open' : 'closed';
+				try {
+					localStorage.setItem(TOC_KEY, open ? 'open' : 'closed');
+				} catch {
+					// 瀏覽器不讓存：這一頁照樣切換，換頁後回到預設（收起來）
+				}
+				show();
+			});
+		}
+	}
+	customElements.define('vl-toc-toggle', VlTocToggle);
+</script>
+
+<style>
+	vl-toc-toggle {
+		display: block;
+	}
+
+	/* 沒有 JavaScript（<html> 沒有 data-vl-toc）時不顯示按鈕，用 Starlight 原本的標題 */
+	.vl-toc-button {
+		display: none;
+	}
+
+	:global(:root[data-vl-toc]) .vl-toc-button {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.5rem;
+		width: 100%;
+		min-height: 2.75rem;
+		margin: -0.5rem 0 0.25rem;
+		padding: 0;
+		border: 0;
+		border-radius: 0.375rem;
+		background: none;
+		color: var(--sl-color-white);
+		font: inherit;
+		font-size: var(--sl-text-h5);
+		font-weight: 600;
+		line-height: var(--sl-line-height-headings);
+		text-align: start;
+		cursor: pointer;
+	}
+
+	.vl-toc-button :global(.vl-toc-caret) {
+		flex-shrink: 0;
+		font-size: 1.25rem;
+		color: var(--sl-color-gray-3);
+	}
+
+	.vl-toc-button:focus-visible {
+		outline: 2px solid var(--sl-color-accent);
+		outline-offset: 2px;
+	}
+
+	@media (hover: hover) {
+		.vl-toc-button:hover,
+		.vl-toc-button:hover :global(.vl-toc-caret) {
+			color: var(--sl-color-accent-high);
+		}
+	}
+
+	/* 有按鈕時，Starlight 原本的標題只留給螢幕報讀器（目錄的 <nav> 靠它命名） */
+	:global(:root[data-vl-toc]) #vl-toc-body :global(#starlight__on-this-page) {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		margin: -1px;
+		padding: 0;
+		overflow: hidden;
+		clip-path: inset(50%);
+		white-space: nowrap;
+	}
+
+	:global(:root[data-vl-toc='closed']) #vl-toc-body {
+		display: none;
+	}
+
+	/* 收起來：右欄縮成窄欄，內容區扣掉窄欄後置中，最寬 52rem（展開時是 Starlight 原本的 45rem） */
+	@media (min-width: 72rem) {
+		:global(:root[data-vl-toc='closed']) {
+			--vl-toc-rail: 3rem;
+			--vl-toc-closed-content: 52rem;
+		}
+
+		:global(:root[data-vl-toc='closed'] .right-sidebar-container) {
+			width: var(--vl-toc-rail);
+		}
+
+		:global(:root[data-vl-toc='closed'][data-has-sidebar][data-has-toc] .main-pane) {
+			--sl-content-width: var(--vl-toc-closed-content);
+			--sl-content-margin-inline: auto;
+			width: calc(100% - var(--vl-toc-rail));
+		}
+
+		/* 上方的搜尋框：Starlight 用 --__main-column-fr 讓它對齊內容區的左緣（Header.astro），
+		   內容區改成在左側欄和窄欄中間置中，這裡照同樣的意思重算；Starlight 改了這個變數名稱的話，只是搜尋框對不齊 */
+		:global(:root[data-vl-toc='closed'][data-has-sidebar][data-has-toc] div.header) {
+			--__main-column-fr: calc(
+				(
+						100% + 2 * var(--sl-nav-pad-x) - var(--sl-content-inline-start, 0rem) - var(--vl-toc-rail) -
+							var(--vl-toc-closed-content)
+					) / 2
+			);
+		}
+
+		:global(:root[data-vl-toc='closed'] .right-sidebar-panel) {
+			padding: 0.75rem 0;
+		}
+
+		:global(:root[data-vl-toc='closed'] .right-sidebar-panel .sl-container) {
+			width: var(--vl-toc-rail);
+			max-width: none;
+		}
+
+		/* 窄欄裡的按鈕：箭頭朝左（點了往左拉出來），「本頁內容」直排 */
+		:global(:root[data-vl-toc='closed']) .vl-toc-button {
+			flex-direction: column-reverse;
+			justify-content: center;
+			gap: 0.375rem;
+			margin: 0;
+			padding: 0.75rem 0;
+			border-radius: 0;
+			font-size: var(--sl-text-sm);
+		}
+
+		:global(:root[data-vl-toc='closed']) .vl-toc-label {
+			writing-mode: vertical-rl;
+			letter-spacing: 0.15em;
+		}
+
+		:global(:root[data-vl-toc='closed']) .vl-toc-button :global(.vl-toc-caret) {
+			transform: rotate(180deg);
+		}
+
+		@media (hover: hover) {
+			:global(:root[data-vl-toc='closed']) .vl-toc-button:hover {
+				background: var(--sl-color-gray-6);
+			}
+		}
+	}
+</style>

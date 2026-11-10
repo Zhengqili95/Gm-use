@@ -1,0 +1,49 @@
+---
+// Starlight 的 ThemeProvider（在 <head> 裡設定深色、淺色主題），再加上兩件要在畫面畫出來之前決定的事（D-029）：
+// - 主題選了「黑色」：<html> 加上 data-vl-shade="black"，免得先閃一下墨綠色（顏色在 src/styles/theme.css）。
+// - 右邊的「本頁內容」收起來還是展開：<html> 的 data-vl-toc 是 closed 或 open，免得內容區先窄後寬（TableOfContents.astro）。
+// 讀 localStorage 的規則和 prefs.ts 一樣，改的時候兩邊一起改。
+import Default from '@astrojs/starlight/components/ThemeProvider.astro';
+import { SHADE_KEY, THEME_KEY, TOC_KEY } from './prefs';
+---
+
+<Default />
+
+<script is:inline define:vars={{ THEME_KEY, SHADE_KEY, TOC_KEY }}>
+	window.VlPrefs = (() => {
+		// 有些瀏覽器設定不讓網頁用 localStorage，一讀就丟錯誤：當作沒存過
+		const read = (key) => {
+			try {
+				return localStorage.getItem(key);
+			} catch {
+				return null;
+			}
+		};
+		const root = document.documentElement;
+		// 和 readThemeChoice 一樣：深色主題加上黑色的標記才算黑色（M-145 建議 2）
+		if (read(THEME_KEY) === 'dark' && read(SHADE_KEY) === 'black') root.dataset.vlShade = 'black';
+		root.dataset.vlToc = read(TOC_KEY) === 'open' ? 'open' : 'closed';
+
+		// 同 prefs.ts 的 readThemeChoice
+		const storedChoice = () => {
+			const theme = read(THEME_KEY);
+			if (theme === 'light') return 'light';
+			if (theme === 'dark') return read(SHADE_KEY) === 'black' ? 'black' : 'dark';
+			return 'auto';
+		};
+
+		return {
+			// 把每個主題選單（ThemeSelect.astro）換成目前的選擇；圖示用 Starlight 的那組，黑色和墨綠一樣是月亮
+			updatePickers(choice = storedChoice()) {
+				const icons = document.querySelector('#theme-icons');
+				const icon = icons && icons.content.querySelector(choice === 'black' ? '.dark' : '.' + choice);
+				document.querySelectorAll('vl-theme-select').forEach((picker) => {
+					const select = picker.querySelector('select');
+					if (select) select.value = choice;
+					const oldIcon = picker.querySelector('svg.label-icon');
+					if (icon && oldIcon) oldIcon.replaceChildren(...icon.cloneNode(true).childNodes);
+				});
+			},
+		};
+	})();
+</script>

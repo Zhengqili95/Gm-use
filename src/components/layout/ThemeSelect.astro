@@ -1,0 +1,77 @@
+---
+// 主題選單：Starlight 原本有深色、淺色、自動三種，這裡多一個「黑色」（D-029：保留墨綠色，多一種黑色可選）。
+// 原本的「深色」改叫「墨綠」，和「黑色」分得出來。
+// 「黑色」是深色主題換成黑底：<html> 一樣是 data-theme="dark"，再加上 data-vl-shade="black"，顏色寫在 src/styles/theme.css。
+// 選擇存在 localStorage（規則在 prefs.ts）；頁面一開始就套用的部分在 ThemeProvider.astro。
+import Select from '@astrojs/starlight/components/Select.astro';
+---
+
+<vl-theme-select>
+	<Select
+		icon="laptop"
+		label={Astro.locals.t('themeSelect.accessibleLabel')}
+		options={[
+			{ label: '墨綠', selected: false, value: 'dark' },
+			{ label: '黑色', selected: false, value: 'black' },
+			{ label: Astro.locals.t('themeSelect.light'), selected: false, value: 'light' },
+			{ label: Astro.locals.t('themeSelect.auto'), selected: true, value: 'auto' },
+		]}
+		width="6.25em"
+	/>
+</vl-theme-select>
+
+{/* 選單一出現就換成目前的選擇，不等下面的模組腳本，免得先看到「自動」（和 Starlight 原本的選單一樣） */}
+<script is:inline>
+	VlPrefs.updatePickers();
+</script>
+
+<script>
+	import { parseThemeChoice, readThemeChoice, themeFor, themeStorage, type ThemeChoice } from './prefs';
+
+	const systemPrefersLight = matchMedia('(prefers-color-scheme: light)');
+
+	function read(key: string): string | null {
+		try {
+			return localStorage.getItem(key);
+		} catch {
+			return null;
+		}
+	}
+
+	function save(choice: ThemeChoice): void {
+		try {
+			for (const [key, value] of Object.entries(themeStorage(choice))) {
+				if (value === null) localStorage.removeItem(key);
+				else localStorage.setItem(key, value);
+			}
+		} catch {
+			// 瀏覽器不讓存：這一頁照樣換，換頁後回到原本的主題
+		}
+	}
+
+	function apply(choice: ThemeChoice): void {
+		const root = document.documentElement;
+		root.dataset.theme = themeFor(choice, systemPrefersLight.matches);
+		if (choice === 'black') root.dataset.vlShade = 'black';
+		else delete root.dataset.vlShade;
+		VlPrefs.updatePickers(choice);
+	}
+
+	// 選「自動」時，跟著系統的深淺色切換
+	systemPrefersLight.addEventListener('change', () => {
+		if (readThemeChoice(read) === 'auto') apply('auto');
+	});
+
+	class VlThemeSelect extends HTMLElement {
+		constructor() {
+			super();
+			this.querySelector('select')?.addEventListener('change', (event) => {
+				if (!(event.currentTarget instanceof HTMLSelectElement)) return;
+				const choice = parseThemeChoice(event.currentTarget.value);
+				save(choice);
+				apply(choice);
+			});
+		}
+	}
+	customElements.define('vl-theme-select', VlThemeSelect);
+</script>

@@ -27,3 +27,12 @@
 - 只接受給填寫的人用的 Google 表單網址（`https://forms.gle/…` 或 `https://docs.google.com/forms/d/…/viewform`，後面的 `?usp=…` 可有可無）。編輯畫面的網址（結尾是 `/edit`）不行，學習者打開會看到「需要存取權」。填錯時 `npm test` 會抓到，`npm run build` 也會失敗，不會把壞掉的連結放上線。
 - 只有課程頁（`lessons/lesson-N`）顯示；首頁、404、練習實驗室都不放。連結另開新分頁，不打斷正在讀的課。
 - `Footer.astro` 覆寫 Starlight 的頁尾（在 `astro.config.mjs` 的 `components` 登記）：先放回饋連結，再放原本的頁尾（上一頁、下一頁）。樣式在 `src/styles/theme.css` 的「回報問題／給建議」段落。
+
+## 主題選單的「黑色」、可以收合的「本頁內容」（T-022、D-029）
+
+第 1 課的回饋：背景保留墨綠色、多一種黑色可選；右邊的「本頁內容」太佔空間，改成可以展開、收合，預設收起來。前三個 `.astro` 檔覆寫 Starlight 的元件，在 `astro.config.mjs` 的 `components` 登記。
+
+- `ThemeSelect.astro`：主題選單，選項是「墨綠、黑色、淺色、自動」（原本的「深色」改叫「墨綠」）。「黑色」是深色主題換成黑底：`<html>` 一樣是 `data-theme="dark"`，再加上 `data-vl-shade="black"`；顏色寫在 `src/styles/theme.css` 開頭的「黑色」段落，品牌綠不變。
+- `TableOfContents.astro`：右邊「本頁內容」的開關。收起來時右欄只剩一條 3rem 的窄欄，內容區在左側欄和窄欄中間置中，最寬 52rem（展開時是 Starlight 原本的 45rem）；練習的編輯區和預覽框也跟著變寬。只有 72rem 以上的螢幕有右欄，比較窄的螢幕照舊用 Starlight 上方的下拉選單。不能跑 JavaScript 時照 Starlight 原本的樣子全部展開。上方搜尋框的對齊用到 Starlight 的內部變數 `--__main-column-fr`；升級 Starlight 之後，要看搜尋框左緣有沒有對齊內容區左緣。
+- `ThemeProvider.astro`：Starlight 原本在 `<head>` 設定主題的元件，再加一小段內嵌腳本，在畫面畫出來之前就套用黑色和收合狀態（`<html>` 的 `data-vl-shade`、`data-vl-toc`），免得先閃一下墨綠色、內容區先窄後寬。
+- `prefs.ts`：兩個選擇怎麼存在 localStorage。主題沿用 Starlight 的 `starlight-theme`（選黑色時也存 `dark`），另外用 `vl-dark-shade` 記黑色；「本頁內容」存在 `vl-toc`（`open`／`closed`，沒存過就是收起來）。`ThemeProvider.astro` 的內嵌腳本不能 import，讀法寫了同樣的一份，改的時候兩邊一起改。測試在 `prefs.test.mjs`。
