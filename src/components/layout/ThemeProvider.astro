@@ -20,7 +20,8 @@ import { SHADE_KEY, THEME_KEY, TOC_KEY } from './prefs';
 			}
 		};
 		const root = document.documentElement;
-		if (read(SHADE_KEY) === 'black') root.dataset.vlShade = 'black';
+		// 和 readThemeChoice 一樣：深色主題加上黑色的標記才算黑色（M-145 建議 2）
+		if (read(THEME_KEY) === 'dark' && read(SHADE_KEY) === 'black') root.dataset.vlShade = 'black';
 		root.dataset.vlToc = read(TOC_KEY) === 'open' ? 'open' : 'closed';
 
 		// 同 prefs.ts 的 readThemeChoice

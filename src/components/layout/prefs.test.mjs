@@ -66,6 +66,9 @@ describe('存起來再讀回來', () => {
 	it('自動在 Starlight 的 key 裡存成空字串（和 Starlight 原本一樣）', () => {
 		assert.equal(themeStorage('auto')[THEME_KEY], '');
 	});
+	it('主題的 key 是 Starlight 寫死的 starlight-theme，不能改名（M-145 建議 1）', () => {
+		assert.equal(THEME_KEY, 'starlight-theme');
+	});
 });
 
 describe('<html> 的 data-theme', () => {
